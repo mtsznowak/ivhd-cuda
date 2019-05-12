@@ -1,4 +1,7 @@
 cpu
+gpu
+main
 tags
+result*
 *.a
 *.so

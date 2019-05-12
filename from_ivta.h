@@ -1,16 +1,9 @@
 #include <cmath>
 #include <vector>
+#include "distance.h"
+#include "distance_container.h"
 using namespace std;
 typedef float Real;
-
-enum DistElemType { etNear, etFar, etRandom, etToRemove };
-
-class DistElem {
- public:
-  long i, j;
-  Real r;
-  DistElemType type;
-};
 
 class anyVector3d {
  public:
@@ -53,27 +46,26 @@ class anyVector3d {
   }
 };
 
-class IVHD {
+class IVHD : public IDistanceContainer {
  public:
   IVHD(int n) : positions(n), v(n), f(n) {}
-  void time_step_R(bool firstStep, Real &energy, Real & /*dtf*/,
-                   long &interactions);
-  void addDistance(DistElem dst){distances.push_back(dst);};
+  void time_step_R(bool firstStep);
+  void addDistance(DistElem dst) { distances.push_back(dst); };
   vector<anyVector3d> positions;
   vector<anyVector3d> v;
   vector<anyVector3d> f;
   vector<DistElem> distances;
 
+  anyVector3d *gpu_positions;
+  anyVector3d *gpu_v;
+  anyVector3d *gpu_f;
+  DistElem *gpu_distances;
+  anyVector3d *gpu_components;
+
+  bool allocateInitializeDeviceMemory();
+  bool copyResultsToHost();
+
+
  private:
-  anyVector3d force(DistElem distance, Real &energy);
-  Real shrink_near = 0, shrink_far = 1;
-  Real sammon_k = 1;
-  Real sammon_m = 2;
-  Real sammon_w = 0;
-  Real a_factor = 0.990545;
-  Real b_factor = 0.000200945;
-  bool only2d = true;
-  Real w_near = 1;
-  Real w_random = 0.01;
-  Real w_far = 1;
+  anyVector3d force(DistElem distance);
 };
