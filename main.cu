@@ -1,7 +1,7 @@
+#include <cuda.h>
 #include <chrono>
 #include <iostream>
 #include <vector>
-#include <cuda.h>
 #include "data.h"
 #include "from_ivta.h"
 using namespace std;
@@ -36,17 +36,16 @@ int main(int argc, char* argv[]) {
 
   now = system_clock::now();
   auto totalTime =
-    time_point_cast<milliseconds>(now).time_since_epoch().count() - start;
-
+      time_point_cast<milliseconds>(now).time_since_epoch().count() - start;
 
   ivhd.copyResultsToHost();
   /*cerr << "IVHD complete (" << totalTime << " ms)" << endl;*/
-  cerr  << totalTime << endl;
+  cerr << totalTime << endl;
 
   for (int i = 0; i < n; i++) {
     if (i % 10 == 0)
       cout << ivhd.positions[i].x << " " << ivhd.positions[i].y << " "
-        << data.labels[i] << endl;
+           << data.labels[i] << endl;
   }
 
   return 0;

@@ -61,11 +61,15 @@ class IVHD : public IDistanceContainer {
   anyVector3d *gpu_f;
   DistElem *gpu_distances;
   anyVector3d *gpu_components;
+  int **gpu_dst_indexes;
+  int **dst_indexes;
+  int *gpu_dst_lens;
+  int *gpu_sample_indexes;
 
   bool allocateInitializeDeviceMemory();
   bool copyResultsToHost();
 
-
  private:
   anyVector3d force(DistElem distance);
+  void initializeHelperVectors();
 };

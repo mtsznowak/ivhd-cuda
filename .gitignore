@@ -3,5 +3,9 @@ gpu
 main
 tags
 result*
+*result
 *.a
 *.so
+notes
+Session.vim
+

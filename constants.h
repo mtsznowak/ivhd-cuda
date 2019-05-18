@@ -14,8 +14,9 @@
 
 inline bool cudaCheck(cudaError_t ret, const char *fileName, unsigned int lineNo) {
     if (ret != cudaSuccess) {
-        std::cout << "CUDA error in " << fileName << ":" << lineNo << std::endl
+        std::cerr << "CUDA error in " << fileName << ":" << lineNo << std::endl
                   << "\t (" << cudaGetErrorString(ret) << ")" << std::endl;
+        exit(-1);
     }
 
     return ret != cudaSuccess;
