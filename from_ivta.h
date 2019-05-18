@@ -19,7 +19,6 @@ class IVHD : public IDistanceContainer {
   
   float2 *gpu_f;
   DistElem *gpu_distances;
-  float2 *gpu_components;
   int **gpu_dst_indexes;
   int **dst_indexes;
   int *gpu_dst_lens;

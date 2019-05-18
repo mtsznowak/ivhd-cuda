@@ -19,8 +19,7 @@ __global__ void calcPositions(long n, float2 *v, float2 *f, float2 *positions) {
   return;
 }
 
-__global__ void calcForceComponents(int compNumber, float2 *components,
-                                    DistElem *distances, float2 *positions) {
+__global__ void calcForceComponents(int compNumber, DistElem *distances, float2 *positions) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < compNumber) {
     DistElem distance = distances[i];
@@ -44,26 +43,25 @@ __global__ void calcForceComponents(int compNumber, float2 *components,
       rv.x *= w_random;
       rv.y *= w_random;
     }
-    components[i] = rv;
+    distances[i].currentComponent = rv;
   }
   return;
 }
 
 __global__ void applyForces(int n, float2 *f, DistElem *dstElems,
-                            float2 *components, int *lens, int **dst_indexes,
+                            int *lens, int **dst_indexes,
                             int *sample_indexes) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n) {
-    i = sample_indexes[i];
+    /*i = sample_indexes[i];*/
     int dst_len = lens[i];
 
     for (int j = 0; j < dst_len; j++) {
       int dst_index = dst_indexes[i][j];
-      DistElem &dst = dstElems[dst_index];
+      DistElem dst = dstElems[dst_index];
       int negat = ((i == dst.i) - (i == dst.j));
-      float2 &comp = components[dst_index];
-      f[i].x += comp.x * negat;
-      f[i].y += comp.y * negat;
+      f[i].x += dst.currentComponent.x * negat;
+      f[i].y += dst.currentComponent.y * negat;
     }
   }
   return;
@@ -141,11 +139,11 @@ void IVHD::time_step_R(bool firstStep) {
   cudaMemset(gpu_f, 0, f.size() * sizeof(float2));
 
   calcForceComponents<<<distances.size() / 256 + 1, 256>>>(
-      distances.size(), gpu_components, gpu_distances, gpu_positions);
+      distances.size(), gpu_distances, gpu_positions);
 
   // calculate index of every force that should be applied for given sample
   applyForces<<<positions.size() / 256 + 1, 256>>>(
-      positions.size(), gpu_f, gpu_distances, gpu_components, gpu_dst_lens,
+      positions.size(), gpu_f, gpu_distances, gpu_dst_lens,
       gpu_dst_indexes, gpu_sample_indexes);
 }
 
@@ -154,7 +152,6 @@ bool IVHD::allocateInitializeDeviceMemory() {
   cuCall(cudaMalloc(&gpu_v, v.size() * sizeof(float2)));
   cuCall(cudaMalloc(&gpu_f, f.size() * sizeof(float2)));
   cuCall(cudaMalloc(&gpu_distances, distances.size() * sizeof(DistElem)));
-  cuCall(cudaMalloc(&gpu_components, distances.size() * sizeof(float2)));
 
   cuCall(cudaMemcpy(gpu_positions, &positions[0],
                     sizeof(float2) * positions.size(), cudaMemcpyHostToDevice));
@@ -177,7 +174,6 @@ bool IVHD::copyResultsToHost() {
   cuCall(cudaFree(gpu_v));
   cuCall(cudaFree(gpu_f));
   cuCall(cudaFree(gpu_distances));
-  cuCall(cudaFree(gpu_components));
 
   return true;
 }
