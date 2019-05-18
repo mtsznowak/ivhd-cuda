@@ -11,10 +11,13 @@ using namespace std;
 __global__ void calcPositions(long n, float2 *v, float2 *f, float2 *positions) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n) {
-    v[i].x = v[i].x * a_factor + f[i].x * b_factor;
-    v[i].y = v[i].y * a_factor + f[i].y * b_factor;
-    positions[i].x += v[i].x;
-    positions[i].y += v[i].y;
+    float2 vi = v[i];
+    float2 fi = f[i];
+    vi.x = vi.x * a_factor + fi.x * b_factor;
+    vi.y = vi.y * a_factor + fi.y * b_factor;
+    v[i] = vi;
+    positions[i].x += vi.x;
+    positions[i].y += vi.y;
   }
   return;
 }
