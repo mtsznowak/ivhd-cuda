@@ -8,19 +8,8 @@
 #include "from_ivta.h"
 using namespace std;
 
-anyVector3d IVHD::force(DistElem distance) {
-  anyVector3d rv = positions[distance.i] - positions[distance.j];
-
-  Real r = positions[distance.i].distance3D(positions[distance.j]);
-  Real D = distance.r;
-
-  Real energy = (r - D) / r;
-
-  return rv * (-energy);
-}
-
-__global__ void calcPositions(long n, anyVector3d *v, anyVector3d *f,
-                              anyVector3d *positions) {
+__global__ void calcPositions(long n, float2 *v, float2 *f,
+                              float2 *positions) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n) {
     v[i].x = v[i].x * a_factor + f[i].x * b_factor;
@@ -31,16 +20,16 @@ __global__ void calcPositions(long n, anyVector3d *v, anyVector3d *f,
   return;
 }
 
-__global__ void calcForceComponents(int compNumber, anyVector3d *components,
+__global__ void calcForceComponents(int compNumber, float2 *components,
                                     DistElem *distances,
-                                    anyVector3d *positions) {
+                                    float2 *positions) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < compNumber) {
     DistElem distance = distances[i];
-    anyVector3d posI = positions[distance.i];
-    anyVector3d posJ = positions[distance.j];
+    float2 posI = positions[distance.i];
+    float2 posJ = positions[distance.j];
 
-    anyVector3d rv = posI;
+    float2 rv = posI;
     rv.x -= posJ.x;
     rv.y -= posJ.y;
 
@@ -62,8 +51,8 @@ __global__ void calcForceComponents(int compNumber, anyVector3d *components,
   return;
 }
 
-__global__ void applyForces(int n, anyVector3d *f, DistElem *dstElems,
-                            anyVector3d *components, int *lens,
+__global__ void applyForces(int n, float2 *f, DistElem *dstElems,
+                            float2 *components, int *lens,
                             int **dst_indexes, int *sample_indexes) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n) {
@@ -74,7 +63,7 @@ __global__ void applyForces(int n, anyVector3d *f, DistElem *dstElems,
       int dst_index = dst_indexes[i][j];
       DistElem &dst = dstElems[dst_index];
       int negat = ((i == dst.i) - (i == dst.j));
-      anyVector3d &comp = components[dst_index];
+      float2 &comp = components[dst_index];
       f[i].x += comp.x * negat;
       f[i].y += comp.y * negat;
     }
@@ -143,7 +132,7 @@ void IVHD::initializeHelperVectors() {
 
 void IVHD::time_step_R(bool firstStep) {
   if (firstStep) {
-    cudaMemset(gpu_v, 0, v.size() * sizeof(anyVector3d));
+    cudaMemset(gpu_v, 0, v.size() * sizeof(float2));
     initializeHelperVectors();
   } else {
     calcPositions<<<positions.size() / 256 + 1, 256>>>(positions.size(), gpu_v,
@@ -151,7 +140,7 @@ void IVHD::time_step_R(bool firstStep) {
   }
 
   // calculate forces
-  cudaMemset(gpu_f, 0, f.size() * sizeof(anyVector3d));
+  cudaMemset(gpu_f, 0, f.size() * sizeof(float2));
 
   calcForceComponents<<<distances.size() / 256 + 1, 256>>>(
       distances.size(), gpu_components, gpu_distances, gpu_positions);
@@ -163,18 +152,18 @@ void IVHD::time_step_R(bool firstStep) {
 }
 
 bool IVHD::allocateInitializeDeviceMemory() {
-  cuCall(cudaMalloc(&gpu_positions, positions.size() * sizeof(anyVector3d)));
-  cuCall(cudaMalloc(&gpu_v, v.size() * sizeof(anyVector3d)));
-  cuCall(cudaMalloc(&gpu_f, f.size() * sizeof(anyVector3d)));
+  cuCall(cudaMalloc(&gpu_positions, positions.size() * sizeof(float2)));
+  cuCall(cudaMalloc(&gpu_v, v.size() * sizeof(float2)));
+  cuCall(cudaMalloc(&gpu_f, f.size() * sizeof(float2)));
   cuCall(cudaMalloc(&gpu_distances, distances.size() * sizeof(DistElem)));
-  cuCall(cudaMalloc(&gpu_components, distances.size() * sizeof(anyVector3d)));
+  cuCall(cudaMalloc(&gpu_components, distances.size() * sizeof(float2)));
 
   cuCall(cudaMemcpy(gpu_positions, &positions[0],
-                    sizeof(anyVector3d) * positions.size(),
+                    sizeof(float2) * positions.size(),
                     cudaMemcpyHostToDevice));
-  cuCall(cudaMemcpy(gpu_v, &v[0], sizeof(anyVector3d) * v.size(),
+  cuCall(cudaMemcpy(gpu_v, &v[0], sizeof(float2) * v.size(),
                     cudaMemcpyHostToDevice));
-  cuCall(cudaMemcpy(gpu_f, &f[0], sizeof(anyVector3d) * f.size(),
+  cuCall(cudaMemcpy(gpu_f, &f[0], sizeof(float2) * f.size(),
                     cudaMemcpyHostToDevice));
   cuCall(cudaMemcpy(gpu_distances, &distances[0],
                     sizeof(DistElem) * distances.size(),
@@ -185,7 +174,7 @@ bool IVHD::allocateInitializeDeviceMemory() {
 
 bool IVHD::copyResultsToHost() {
   cuCall(cudaMemcpy(&positions[0], gpu_positions,
-                    sizeof(anyVector3d) * positions.size(),
+                    sizeof(float2) * positions.size(),
                     cudaMemcpyDeviceToHost));
 
   cuCall(cudaFree(gpu_positions));

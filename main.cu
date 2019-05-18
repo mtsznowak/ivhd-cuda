@@ -19,7 +19,6 @@ int main(int argc, char* argv[]) {
   for (int i = 0; i < n; i++) {
     ivhd.positions[i].x = rand() % 100000 - 50000;
     ivhd.positions[i].y = rand() % 100000 - 50000;
-    ivhd.positions[i].z = 0;
   }
 
   /*cerr << "starting IVHD" << endl;*/
