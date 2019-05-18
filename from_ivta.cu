@@ -8,8 +8,7 @@
 #include "from_ivta.h"
 using namespace std;
 
-__global__ void calcPositions(long n, float2 *v, float2 *f,
-                              float2 *positions) {
+__global__ void calcPositions(long n, float2 *v, float2 *f, float2 *positions) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n) {
     v[i].x = v[i].x * a_factor + f[i].x * b_factor;
@@ -21,8 +20,7 @@ __global__ void calcPositions(long n, float2 *v, float2 *f,
 }
 
 __global__ void calcForceComponents(int compNumber, float2 *components,
-                                    DistElem *distances,
-                                    float2 *positions) {
+                                    DistElem *distances, float2 *positions) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < compNumber) {
     DistElem distance = distances[i];
@@ -33,11 +31,11 @@ __global__ void calcForceComponents(int compNumber, float2 *components,
     rv.x -= posJ.x;
     rv.y -= posJ.y;
 
-    Real r = sqrtf((posI.x - posJ.x) * (posI.x - posJ.x) +
-                   (posI.y - posJ.y) * (posI.y - posJ.y));
-    Real D = distance.r;
+    float r = sqrtf((posI.x - posJ.x) * (posI.x - posJ.x) +
+                    (posI.y - posJ.y) * (posI.y - posJ.y));
+    float D = distance.r;
 
-    Real energy = (r - D) / r;
+    float energy = (r - D) / r;
     rv.x *= -energy;
     rv.y *= -energy;
 
@@ -52,8 +50,8 @@ __global__ void calcForceComponents(int compNumber, float2 *components,
 }
 
 __global__ void applyForces(int n, float2 *f, DistElem *dstElems,
-                            float2 *components, int *lens,
-                            int **dst_indexes, int *sample_indexes) {
+                            float2 *components, int *lens, int **dst_indexes,
+                            int *sample_indexes) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n) {
     i = sample_indexes[i];
@@ -159,8 +157,7 @@ bool IVHD::allocateInitializeDeviceMemory() {
   cuCall(cudaMalloc(&gpu_components, distances.size() * sizeof(float2)));
 
   cuCall(cudaMemcpy(gpu_positions, &positions[0],
-                    sizeof(float2) * positions.size(),
-                    cudaMemcpyHostToDevice));
+                    sizeof(float2) * positions.size(), cudaMemcpyHostToDevice));
   cuCall(cudaMemcpy(gpu_v, &v[0], sizeof(float2) * v.size(),
                     cudaMemcpyHostToDevice));
   cuCall(cudaMemcpy(gpu_f, &f[0], sizeof(float2) * f.size(),
@@ -174,8 +171,7 @@ bool IVHD::allocateInitializeDeviceMemory() {
 
 bool IVHD::copyResultsToHost() {
   cuCall(cudaMemcpy(&positions[0], gpu_positions,
-                    sizeof(float2) * positions.size(),
-                    cudaMemcpyDeviceToHost));
+                    sizeof(float2) * positions.size(), cudaMemcpyDeviceToHost));
 
   cuCall(cudaFree(gpu_positions));
   cuCall(cudaFree(gpu_v));

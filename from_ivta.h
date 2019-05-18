@@ -3,7 +3,6 @@
 #include "distance.h"
 #include "distance_container.h"
 using namespace std;
-typedef float Real;
 
 class IVHD : public IDistanceContainer {
  public:
