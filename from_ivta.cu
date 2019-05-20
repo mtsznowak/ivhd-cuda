@@ -8,26 +8,27 @@
 #include "from_ivta.h"
 using namespace std;
 
-__global__ void calcPositions(long n, float2 *v, float2 *f, float2 *positions) {
+__global__ void calcPositions(long n, Sample *samples) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n) {
-    float2 vi = v[i];
-    float2 fi = f[i];
-    vi.x = vi.x * a_factor + fi.x * b_factor;
-    vi.y = vi.y * a_factor + fi.y * b_factor;
-    v[i] = vi;
-    positions[i].x += vi.x;
-    positions[i].y += vi.y;
+    Sample sample = samples[i];
+    sample.v.x = sample.v.x * a_factor + sample.f.x * b_factor;
+    sample.v.y = sample.v.y * a_factor + sample.f.y * b_factor;
+    sample.f = {0, 0};
+    sample.pos.x += sample.v.x;
+    sample.pos.y += sample.v.y;
+    samples[i] = sample;
   }
   return;
 }
 
-__global__ void calcForceComponents(int compNumber, DistElem *distances, float2 *positions) {
+__global__ void calcForceComponents(int compNumber, DistElem *distances, Sample *samples) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < compNumber) {
     DistElem distance = distances[i];
-    float2 posI = positions[distance.i];
-    float2 posJ = positions[distance.j];
+
+    float2 posI = samples[distance.i].pos;
+    float2 posJ = samples[distance.j].pos;
 
     float2 rv = posI;
     rv.x -= posJ.x;
@@ -46,137 +47,154 @@ __global__ void calcForceComponents(int compNumber, DistElem *distances, float2 
       rv.x *= w_random;
       rv.y *= w_random;
     }
-    distances[i].currentComponent = rv;
+    *distance.comp1 = rv;
+    *distance.comp2 = {-rv.x, -rv.y};
   }
   return;
 }
 
-__global__ void applyForces(int n, float2 *f, DistElem *dstElems,
-                            int *lens, int **dst_indexes,
-                            int *sample_indexes) {
+__global__ void applyForces(int n, Sample *samples) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n) {
-    /*i = sample_indexes[i];*/
-    int dst_len = lens[i];
+    Sample sample = samples[i];
 
-    for (int j = 0; j < dst_len; j++) {
-      int dst_index = dst_indexes[i][j];
-      DistElem dst = dstElems[dst_index];
-      int negat = ((i == dst.i) - (i == dst.j));
-      f[i].x += dst.currentComponent.x * negat;
-      f[i].y += dst.currentComponent.y * negat;
+    for (int j = 0; j < sample.num_components; j++) {
+      sample.f.x += sample.components[j].x;
+      sample.f.y += sample.components[j].y;
     }
+
+    samples[i] = sample;
   }
   return;
+}
+
+  // initialize pos in Samples
+  // initialize num_components
+__global__ void initializeSamples(int n, Sample *samples, float2 *positions, short *sampleFreq) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i < n) {
+    Sample sample;
+    sample.pos = positions[i];
+    sample.v = sample.f = {0, 0};
+    sample.num_components = sampleFreq[i];
+    // FIXME - malloc can return NULL
+    sample.components = (float2 *)malloc(sample.num_components * sizeof(float2));
+    samples[i] = sample; 
+  }
+}
+
+__global__ void initializeDistances(int nDst, DistElem *distances, short2 *dstIndexes, Sample *samples) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i<nDst) {
+    DistElem dst = distances[i];
+    dst.comp1 = &samples[dst.i].components[dstIndexes[i].x];
+    dst.comp2 = &samples[dst.j].components[dstIndexes[i].y];
+    distances[i] = dst;
+  }
 }
 
 void IVHD::initializeHelperVectors() {
-  // calculate number of distances for each sample
-  std::unordered_map<int, int> sampleFreq;
-  for (const auto &dst : distances) {
-    sampleFreq[dst.i]++;
-    sampleFreq[dst.j]++;
+  /*
+   * calculate number of distances for each sample 
+   * and index of each distance for a given sample
+   */
+  short sampleFreq[positions.size()];
+  for (int i=0; i<positions.size(); i++) {
+    sampleFreq[i] = 0;
   }
+
+  short2 dstIndexes[distances.size()];
+
+  for (int i=0; i<distances.size(); i++) {
+    dstIndexes[i] = {sampleFreq[distances[i].i]++, sampleFreq[distances[i].j]++};
+  }
+
+  // initialize samples
+  short *d_sample_freq;
+  cuCall(cudaMalloc(&d_sample_freq, positions.size() * sizeof(short)));
+  cuCall(cudaMemcpy(d_sample_freq, sampleFreq,
+                    sizeof(short) * positions.size(),
+                    cudaMemcpyHostToDevice));
+
+  initializeSamples<<<positions.size() / 256 + 1, 256>>>(positions.size(), d_samples, d_positions, d_sample_freq);
+  cuCall(cudaFree(d_sample_freq));
+
+  // initialize comps in Distances in device memory
+  short2 *d_dst_indexes;
+  cuCall(cudaMalloc(&d_dst_indexes, distances.size() * sizeof(short2)));
+  cuCall(cudaMemcpy(d_dst_indexes, dstIndexes,
+                    sizeof(short2) * distances.size(),
+                    cudaMemcpyHostToDevice));
+
+  initializeDistances<<<distances.size() / 256 + 1, 256>>>(distances.size(), d_distances, d_dst_indexes, d_samples);
+  cuCall(cudaFree(d_dst_indexes));
+
+  // optionally sort samples by number of their distances and
+  // distances by i.e. dist.i to utilize cache better
 
   // generate sorted (by the smallest number of distances) list of sample
   // indexes
-  vector<int> sampleIndexes;
-  for (int i = 0; i < positions.size(); i++) {
-    sampleIndexes.push_back(i);
-  }
+  /*vector<int> sampleIndexes;*/
+  /*for (int i = 0; i < positions.size(); i++) {*/
+  /*  sampleIndexes.push_back(i);*/
+  /*}*/
 
-  sort(sampleIndexes.begin(), sampleIndexes.end(),
-       [&sampleFreq](const int &a, const int &b) -> bool {
-         if (sampleFreq[a] != sampleFreq[b]) {
-           return sampleFreq[a] < sampleFreq[b];
-         } else {
-           return a < b;
-         }
-       });
-
-  cuCall(cudaMalloc(&gpu_sample_indexes, sizeof(int) * positions.size()));
-  cuCall(cudaMemcpy(gpu_sample_indexes, &sampleIndexes[0],
-                    sampleIndexes.size() * sizeof(int),
-                    cudaMemcpyHostToDevice));
-
-  vector<vector<int>> dst_indexes_vec(positions.size());
-
-  for (int i = 0; i < distances.size(); i++) {
-    dst_indexes_vec[distances[i].i].push_back(i);
-    dst_indexes_vec[distances[i].j].push_back(i);
-  }
-
-  cuCall(cudaMalloc(&gpu_dst_indexes, positions.size() * sizeof(int *)));
-  dst_indexes = (int **)malloc(positions.size() * sizeof(int *));
-
-  for (int i = 0; i < positions.size(); i++) {
-    cuCall(
-        cudaMalloc(&dst_indexes[i], dst_indexes_vec[i].size() * sizeof(int)));
-    cuCall(cudaMemcpy(dst_indexes[i], &dst_indexes_vec[i][0],
-                      dst_indexes_vec[i].size() * sizeof(int),
-                      cudaMemcpyHostToDevice));
-  }
-
-  cuCall(cudaMemcpy(gpu_dst_indexes, dst_indexes,
-                    positions.size() * sizeof(int *), cudaMemcpyHostToDevice));
-
-  int sizes[positions.size()];
-  for (int i = 0; i < positions.size(); i++) {
-    sizes[i] = dst_indexes_vec[i].size();
-  }
-  cuCall(cudaMalloc(&gpu_dst_lens, sizeof(int) * positions.size()));
-  cuCall(cudaMemcpy(gpu_dst_lens, sizes, sizeof(int) * positions.size(),
-                    cudaMemcpyHostToDevice));
+  /*sort(sampleIndexes.begin(), sampleIndexes.end(),*/
+  /*     [&sampleFreq](const int &a, const int &b) -> bool {*/
+  /*       if (sampleFreq[a] != sampleFreq[b]) {*/
+  /*         return sampleFreq[a] < sampleFreq[b];*/
+  /*       } else {*/
+  /*         return a < b;*/
+  /*       }*/
+  /*     });*/
 }
 
 void IVHD::time_step_R(bool firstStep) {
   if (firstStep) {
-    cudaMemset(gpu_v, 0, v.size() * sizeof(float2));
     initializeHelperVectors();
   } else {
-    calcPositions<<<positions.size() / 256 + 1, 256>>>(positions.size(), gpu_v,
-                                                       gpu_f, gpu_positions);
+    calcPositions<<<positions.size() / 256 + 1, 256>>>(positions.size(), d_samples);
   }
 
   // calculate forces
-  cudaMemset(gpu_f, 0, f.size() * sizeof(float2));
-
   calcForceComponents<<<distances.size() / 256 + 1, 256>>>(
-      distances.size(), gpu_distances, gpu_positions);
+      distances.size(), d_distances, d_samples);
 
   // calculate index of every force that should be applied for given sample
   applyForces<<<positions.size() / 256 + 1, 256>>>(
-      positions.size(), gpu_f, gpu_distances, gpu_dst_lens,
-      gpu_dst_indexes, gpu_sample_indexes);
+      positions.size(), d_samples);
 }
 
 bool IVHD::allocateInitializeDeviceMemory() {
-  cuCall(cudaMalloc(&gpu_positions, positions.size() * sizeof(float2)));
-  cuCall(cudaMalloc(&gpu_v, v.size() * sizeof(float2)));
-  cuCall(cudaMalloc(&gpu_f, f.size() * sizeof(float2)));
-  cuCall(cudaMalloc(&gpu_distances, distances.size() * sizeof(DistElem)));
+  cuCall(cudaMalloc(&d_positions, positions.size() * sizeof(float2)));
+  cuCall(cudaMalloc(&d_samples, positions.size() * sizeof(Sample)));
+  cuCall(cudaMalloc(&d_distances, distances.size() * sizeof(DistElem)));
 
-  cuCall(cudaMemcpy(gpu_positions, &positions[0],
+  cuCall(cudaMemcpy(d_positions, &positions[0],
                     sizeof(float2) * positions.size(), cudaMemcpyHostToDevice));
-  cuCall(cudaMemcpy(gpu_v, &v[0], sizeof(float2) * v.size(),
-                    cudaMemcpyHostToDevice));
-  cuCall(cudaMemcpy(gpu_f, &f[0], sizeof(float2) * f.size(),
-                    cudaMemcpyHostToDevice));
-  cuCall(cudaMemcpy(gpu_distances, &distances[0],
+  cuCall(cudaMemset(d_samples, 0, positions.size() * sizeof(Sample)));
+  cuCall(cudaMemcpy(d_distances, &distances[0],
                     sizeof(DistElem) * distances.size(),
                     cudaMemcpyHostToDevice));
 
   return true;
 }
 
-bool IVHD::copyResultsToHost() {
-  cuCall(cudaMemcpy(&positions[0], gpu_positions,
-                    sizeof(float2) * positions.size(), cudaMemcpyDeviceToHost));
+__global__ void copyPosRelease(int N, Sample *samples, float2 *positions) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i<N) {
+    positions[i] = samples[i].pos;
+    free(samples[i].components);
+  }
+}
 
-  cuCall(cudaFree(gpu_positions));
-  cuCall(cudaFree(gpu_v));
-  cuCall(cudaFree(gpu_f));
-  cuCall(cudaFree(gpu_distances));
+bool IVHD::copyResultsToHost() {
+  copyPosRelease<<<positions.size() / 256 + 1, 256>>>(positions.size(), d_samples, d_positions);
+  cuCall(cudaMemcpy(&positions[0], d_positions,
+                    sizeof(float2) * positions.size(), cudaMemcpyDeviceToHost));
+  cuCall(cudaFree(d_positions));
+  cuCall(cudaFree(d_distances));
+  cuCall(cudaFree(d_samples));
 
   return true;
 }
