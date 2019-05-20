@@ -9,8 +9,8 @@
 using namespace std;
 
 __global__ void calcPositions(long n, Sample *samples) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i < n) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
     Sample sample = samples[i];
     sample.v.x = sample.v.x * a_factor + sample.f.x * b_factor;
     sample.v.y = sample.v.y * a_factor + sample.f.y * b_factor;
@@ -22,9 +22,10 @@ __global__ void calcPositions(long n, Sample *samples) {
   return;
 }
 
-__global__ void calcForceComponents(int compNumber, DistElem *distances, Sample *samples) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i < compNumber) {
+__global__ void calcForceComponents(int compNumber, DistElem *distances,
+                                    Sample *samples) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < compNumber;
+       i += blockDim.x * gridDim.x) {
     DistElem distance = distances[i];
 
     float2 posI = samples[distance.i].pos;
@@ -54,8 +55,8 @@ __global__ void calcForceComponents(int compNumber, DistElem *distances, Sample 
 }
 
 __global__ void applyForces(int n, Sample *samples) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i < n) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += blockDim.x * gridDim.x) {
     Sample sample = samples[i];
 
     for (int j = 0; j < sample.num_components; j++) {
@@ -68,9 +69,10 @@ __global__ void applyForces(int n, Sample *samples) {
   return;
 }
 
-  // initialize pos in Samples
-  // initialize num_components
-__global__ void initializeSamples(int n, Sample *samples, float2 *positions, short *sampleFreq) {
+// initialize pos in Samples
+// initialize num_components
+__global__ void initializeSamples(int n, Sample *samples, float2 *positions,
+                                  short *sampleFreq) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n) {
     Sample sample;
@@ -78,14 +80,16 @@ __global__ void initializeSamples(int n, Sample *samples, float2 *positions, sho
     sample.v = sample.f = {0, 0};
     sample.num_components = sampleFreq[i];
     // FIXME - malloc can return NULL
-    sample.components = (float2 *)malloc(sample.num_components * sizeof(float2));
-    samples[i] = sample; 
+    sample.components =
+        (float2 *)malloc(sample.num_components * sizeof(float2));
+    samples[i] = sample;
   }
 }
 
-__global__ void initializeDistances(int nDst, DistElem *distances, short2 *dstIndexes, Sample *samples) {
+__global__ void initializeDistances(int nDst, DistElem *distances,
+                                    short2 *dstIndexes, Sample *samples) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i<nDst) {
+  if (i < nDst) {
     DistElem dst = distances[i];
     dst.comp1 = &samples[dst.i].components[dstIndexes[i].x];
     dst.comp2 = &samples[dst.j].components[dstIndexes[i].y];
@@ -194,16 +198,14 @@ void IVHD::time_step_R(bool firstStep) {
   if (firstStep) {
     initializeHelperVectors();
   } else {
-    calcPositions<<<positions.size() / 256 + 1, 256>>>(positions.size(), d_samples);
+    calcPositions<<<64, 256>>>(positions.size(), d_samples);
   }
 
   // calculate forces
-  calcForceComponents<<<distances.size() / 256 + 1, 256>>>(
-      distances.size(), d_distances, d_samples);
+  calcForceComponents<<<64, 256>>>(distances.size(), d_distances, d_samples);
 
   // calculate index of every force that should be applied for given sample
-  applyForces<<<positions.size() / 256 + 1, 256>>>(
-      positions.size(), d_samples);
+  applyForces<<<64, 256>>>(positions.size(), d_samples);
 }
 
 bool IVHD::allocateInitializeDeviceMemory() {
@@ -223,14 +225,15 @@ bool IVHD::allocateInitializeDeviceMemory() {
 
 __global__ void copyPosRelease(int N, Sample *samples, float2 *positions) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i<N) {
+  if (i < N) {
     positions[i] = samples[i].pos;
     free(samples[i].components);
   }
 }
 
 bool IVHD::copyResultsToHost() {
-  copyPosRelease<<<positions.size() / 256 + 1, 256>>>(positions.size(), d_samples, d_positions);
+  copyPosRelease<<<positions.size() / 256 + 1, 256>>>(positions.size(),
+                                                      d_samples, d_positions);
   cuCall(cudaMemcpy(&positions[0], d_positions,
                     sizeof(float2) * positions.size(), cudaMemcpyDeviceToHost));
   cuCall(cudaFree(d_positions));
