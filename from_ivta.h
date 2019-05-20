@@ -19,6 +19,7 @@ class IVHD : public IDistanceContainer {
   IVHD(int n) : positions(n) {}
   void time_step_R(bool firstStep);
   void addDistance(DistElem dst) { distances.push_back(dst); };
+  void sortHostSamples(vector<int> &labels);
 
   vector<float2> positions;
   vector<DistElem> distances;

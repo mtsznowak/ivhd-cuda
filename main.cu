@@ -22,6 +22,7 @@ int main(int argc, char* argv[]) {
   }
 
   /*cerr << "starting IVHD" << endl;*/
+  ivhd.sortHostSamples(data.labelsRef());
   ivhd.allocateInitializeDeviceMemory();
   cudaDeviceSynchronize();
 

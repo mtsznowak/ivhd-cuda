@@ -95,58 +95,99 @@ __global__ void initializeDistances(int nDst, DistElem *distances, short2 *dstIn
 
 void IVHD::initializeHelperVectors() {
   /*
-   * calculate number of distances for each sample 
-   * and index of each distance for a given sample
+   * calculate number of distances for each sample and index of each distance
+   * for a given sample
    */
   short sampleFreq[positions.size()];
-  for (int i=0; i<positions.size(); i++) {
+  for (int i = 0; i < positions.size(); i++) {
     sampleFreq[i] = 0;
   }
 
   short2 dstIndexes[distances.size()];
 
-  for (int i=0; i<distances.size(); i++) {
-    dstIndexes[i] = {sampleFreq[distances[i].i]++, sampleFreq[distances[i].j]++};
+  for (int i = 0; i < distances.size(); i++) {
+    dstIndexes[i] = {sampleFreq[distances[i].i]++,
+                     sampleFreq[distances[i].j]++};
   }
 
   // initialize samples
   short *d_sample_freq;
   cuCall(cudaMalloc(&d_sample_freq, positions.size() * sizeof(short)));
-  cuCall(cudaMemcpy(d_sample_freq, sampleFreq,
-                    sizeof(short) * positions.size(),
+  cuCall(cudaMemcpy(d_sample_freq, sampleFreq, sizeof(short) * positions.size(),
                     cudaMemcpyHostToDevice));
 
-  initializeSamples<<<positions.size() / 256 + 1, 256>>>(positions.size(), d_samples, d_positions, d_sample_freq);
+  initializeSamples<<<positions.size() / 256 + 1, 256>>>(
+      positions.size(), d_samples, d_positions, d_sample_freq);
   cuCall(cudaFree(d_sample_freq));
 
   // initialize comps in Distances in device memory
   short2 *d_dst_indexes;
   cuCall(cudaMalloc(&d_dst_indexes, distances.size() * sizeof(short2)));
   cuCall(cudaMemcpy(d_dst_indexes, dstIndexes,
-                    sizeof(short2) * distances.size(),
-                    cudaMemcpyHostToDevice));
+                    sizeof(short2) * distances.size(), cudaMemcpyHostToDevice));
 
-  initializeDistances<<<distances.size() / 256 + 1, 256>>>(distances.size(), d_distances, d_dst_indexes, d_samples);
+  initializeDistances<<<distances.size() / 256 + 1, 256>>>(
+      distances.size(), d_distances, d_dst_indexes, d_samples);
   cuCall(cudaFree(d_dst_indexes));
+}
 
-  // optionally sort samples by number of their distances and
-  // distances by i.e. dist.i to utilize cache better
+/*
+ * This function performs the preprocessing on the CPU that is optional
+ *
+ * Sorts samples by number of their distances and sorts distances by
+ * index i or j to utilize cache better. After sorting samples, their indexes
+ * change so we have to update distances once more
+ */
+void IVHD::sortHostSamples(vector<int> &labels) {
+  // create array of sorted indexes
+  vector<short> sampleFreq(positions.size());
+  for (int i = 0; i < positions.size(); i++) {
+    sampleFreq[i] = 0;
+  }
 
-  // generate sorted (by the smallest number of distances) list of sample
-  // indexes
-  /*vector<int> sampleIndexes;*/
-  /*for (int i = 0; i < positions.size(); i++) {*/
-  /*  sampleIndexes.push_back(i);*/
-  /*}*/
+  vector<int> sampleIndexes(positions.size());
+  for (int i = 0; i < positions.size(); i++) {
+    sampleIndexes[i] = i;
+  }
 
-  /*sort(sampleIndexes.begin(), sampleIndexes.end(),*/
-  /*     [&sampleFreq](const int &a, const int &b) -> bool {*/
-  /*       if (sampleFreq[a] != sampleFreq[b]) {*/
-  /*         return sampleFreq[a] < sampleFreq[b];*/
-  /*       } else {*/
-  /*         return a < b;*/
-  /*       }*/
-  /*     });*/
+  sort(sampleIndexes.begin(), sampleIndexes.end(),
+       [&sampleFreq](const int &a, const int &b) -> bool {
+         if (sampleFreq[a] != sampleFreq[b]) {
+           return sampleFreq[a] < sampleFreq[b];
+         } else {
+           return a < b;
+         }
+       });
+
+  // create mapping index->new index
+  vector<int> newIndexes(positions.size());
+  for (int i = 0; i < positions.size(); i++) {
+    newIndexes[sampleIndexes[i]] = i;
+  }
+
+  // sort positions
+  vector<float2> positionsCopy = positions;
+  vector<int> labelsCopy = labels;
+  for (int i = 0; i < positions.size(); i++) {
+    positions[i] = positionsCopy[sampleIndexes[i]];
+    labels[i] = labelsCopy[sampleIndexes[i]];
+  }
+
+  // update indexes in distances
+  for (int i = 0; i < distances.size(); i++) {
+    distances[i].i = newIndexes[distances[i].i];
+    distances[i].j = newIndexes[distances[i].j];
+  }
+
+  // sort distances
+  sort(distances.begin(), distances.end(),
+       [](const DistElem &a, const DistElem &b) -> bool {
+         if (a.i != b.i) {
+           return a.i < b.i;
+         } else {
+           return a.j <= b.j;
+         }
+       });
 }
 
 void IVHD::time_step_R(bool firstStep) {

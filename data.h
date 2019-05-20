@@ -9,7 +9,9 @@ class Data {
   vector<int> labels;
 
   float calcEuclideanDistance(const vector<int>& v1, const vector<int>& v2);
-  void generateNearestDistances(IDistanceContainer& dstContainer, int n, string file);
+  void generateNearestDistances(IDistanceContainer& dstContainer, int n,
+                                string file);
   void generateRandomDistances(IDistanceContainer& dstContainer, int n);
   int load_mnist(std::string file);
+  vector<int>& labelsRef() { return labels; }
 };
