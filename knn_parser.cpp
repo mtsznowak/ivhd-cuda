@@ -24,7 +24,8 @@ void KNNParser::parseFile(std::string fileName,
   int neighbours = stoi(splits[1]);
   int longSize = stoi(splits[2]);
 
-  //fprintf(stderr, "parsing kNN - N=%d neighbours=%d longSize=%d\n", N, neighbours, longSize);
+  // fprintf(stderr, "parsing kNN - N=%d neighbours=%d longSize=%d\n", N,
+  // neighbours, longSize);
 
   // byte order test
   long testNum;

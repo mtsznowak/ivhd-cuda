@@ -12,14 +12,15 @@
 #define w_far 1.0
 #define only2d true
 
-inline bool cudaCheck(cudaError_t ret, const char *fileName, unsigned int lineNo) {
-    if (ret != cudaSuccess) {
-        std::cerr << "CUDA error in " << fileName << ":" << lineNo << std::endl
-                  << "\t (" << cudaGetErrorString(ret) << ")" << std::endl;
-        exit(-1);
-    }
+inline bool cudaCheck(cudaError_t ret, const char *fileName,
+                      unsigned int lineNo) {
+  if (ret != cudaSuccess) {
+    std::cerr << "CUDA error in " << fileName << ":" << lineNo << std::endl
+              << "\t (" << cudaGetErrorString(ret) << ")" << std::endl;
+    exit(-1);
+  }
 
-    return ret != cudaSuccess;
+  return ret != cudaSuccess;
 }
 
-#define cuCall(err)       cudaCheck(err, __FILE__, __LINE__)
+#define cuCall(err) cudaCheck(err, __FILE__, __LINE__)

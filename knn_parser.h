@@ -1,8 +1,8 @@
-#include <string>
 #include <functional>
+#include <string>
 using namespace std;
 
 class KNNParser {
  public:
-  void parseFile(std::string fileName, function< void(int, int) > handlePair);
+  void parseFile(std::string fileName, function<void(int, int)> handlePair);
 };

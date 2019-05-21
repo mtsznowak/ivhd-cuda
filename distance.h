@@ -1,5 +1,5 @@
 #pragma once
-#include <cuda_runtime.h> 
+#include <cuda_runtime.h>
 
 enum DistElemType { etNear, etFar, etRandom, etToRemove };
 

@@ -5,7 +5,7 @@
 #include <iostream>
 #include <unordered_map>
 #include "constants.h"
-#include "from_ivta.h"
+#include "ivhd.h"
 using namespace std;
 
 __global__ void calcPositions(long n, Sample *samples) {

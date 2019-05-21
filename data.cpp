@@ -53,7 +53,8 @@ void Data::generateRandomDistances(IDistanceContainer& dstContainer, int n) {
   }
 }
 
-void Data::generateNearestDistances(IDistanceContainer& dstContainer, int n, string file) {
+void Data::generateNearestDistances(IDistanceContainer& dstContainer, int n,
+                                    string file) {
   KNNParser parser;
   auto lambda = [&dstContainer](int x, int y) {
     DistElem distElem(x, y);
