@@ -12,6 +12,12 @@ __global__ void calcPositions(long n, Sample *samples) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
        i += blockDim.x * gridDim.x) {
     Sample sample = samples[i];
+
+    for (int j = 0; j < sample.num_components; j++) {
+      sample.f.x += sample.components[j].x;
+      sample.f.y += sample.components[j].y;
+    }
+
     sample.v.x = sample.v.x * a_factor + sample.f.x * b_factor;
     sample.v.y = sample.v.y * a_factor + sample.f.y * b_factor;
     sample.f = {0, 0};
@@ -50,21 +56,6 @@ __global__ void calcForceComponents(int compNumber, DistElem *distances,
     }
     *distance.comp1 = rv;
     *distance.comp2 = {-rv.x, -rv.y};
-  }
-  return;
-}
-
-__global__ void applyForces(int n, Sample *samples) {
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
-       i += blockDim.x * gridDim.x) {
-    Sample sample = samples[i];
-
-    for (int j = 0; j < sample.num_components; j++) {
-      sample.f.x += sample.components[j].x;
-      sample.f.y += sample.components[j].y;
-    }
-
-    samples[i] = sample;
   }
   return;
 }
@@ -198,14 +189,9 @@ void IVHD::time_step_R(bool firstStep) {
   if (firstStep) {
     initializeHelperVectors();
   } else {
-    calcPositions<<<64, 256>>>(positions.size(), d_samples);
+    calcPositions<<<64, 96>>>(positions.size(), d_samples);
   }
-
-  // calculate forces
-  calcForceComponents<<<64, 256>>>(distances.size(), d_distances, d_samples);
-
-  // calculate index of every force that should be applied for given sample
-  applyForces<<<64, 256>>>(positions.size(), d_samples);
+  calcForceComponents<<<64, 96>>>(distances.size(), d_distances, d_samples);
 }
 
 bool IVHD::allocateInitializeDeviceMemory() {

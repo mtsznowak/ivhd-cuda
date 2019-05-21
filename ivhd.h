@@ -4,8 +4,6 @@
 #include "distance_container.h"
 using namespace std;
 
-// maybe updating v/pos should be merged with calculating
-// forces to limit reads from global memory?
 struct Sample {
   float2 pos;
   float2 v;
