@@ -17,25 +17,24 @@ float Data::calcEuclideanDistance(const vector<int>& v1,
 
 int Data::load_mnist(std::string file) {
   ifstream f(file);
+  int n, m;
 
+  f >> n >> m;
   aria::csv::CsvParser parser(f);
 
-  int n = 0;
+  mnist.resize(n);
+  int mnist_ind = 0;
   for (auto& row : parser) {
-    if (n >= mnist.size()) {
-      mnist.resize(n * 2 + 1);
-    }
     int i = 0;
     for (string field : row) {
-      if (!i++) {
+      if (i++ == m) {
         labels.push_back(stoi(field));
       } else {
-        mnist[n].push_back(stoi(field));
+        mnist[mnist_ind].push_back(stoi(field));
       }
     }
-    n++;
+    mnist_ind++;
   }
-  mnist.resize(n);
   f.close();
   return n;
 }
