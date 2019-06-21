@@ -1,4 +1,6 @@
 #pragma once
+#include <iostream>
+using namespace std;
 
 #define a_factor 0.990545
 #define b_factor 0.000200945

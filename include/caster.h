@@ -12,10 +12,10 @@ struct Sample {
   short num_components;
 };
 
-class IVHD : public IDistanceContainer {
+class Caster : public IDistanceContainer {
  public:
-  IVHD(int n) : positions(n) {}
-  void time_step_R(bool firstStep);
+  Caster(int n) : positions(n) {}
+  virtual void simul_step(bool firstStep) = 0;
   void addDistance(DistElem dst) { distances.push_back(dst); };
   void sortHostSamples(vector<int> &labels);
 
@@ -29,6 +29,6 @@ class IVHD : public IDistanceContainer {
   bool allocateInitializeDeviceMemory();
   bool copyResultsToHost();
 
- private:
+ protected:
   void initializeHelperVectors();
 };

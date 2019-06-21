@@ -3,7 +3,7 @@
 #include <iostream>
 #include <vector>
 #include "data.h"
-#include "ivhd.h"
+#include "caster_ab.h"
 using namespace std;
 using namespace std::chrono;
 
@@ -12,25 +12,24 @@ int main(int argc, char* argv[]) {
   Data data;
   int n = data.load_mnist(argv[1]);
 
-  IVHD ivhd(n);
-  data.generateNearestDistances(ivhd, n, argv[2]);
-  data.generateRandomDistances(ivhd, n);
+  CasterAB caster(n);
+  data.generateNearestDistances(caster, n, argv[2]);
+  data.generateRandomDistances(caster, n);
 
   for (int i = 0; i < n; i++) {
-    ivhd.positions[i].x = rand() % 100000 - 50000;
-    ivhd.positions[i].y = rand() % 100000 - 50000;
+    caster.positions[i].x = rand() % 100000 / 100000.0;
+    caster.positions[i].y = rand() % 100000 / 100000.0;
   }
 
-  /*cerr << "starting IVHD" << endl;*/
-  ivhd.sortHostSamples(data.labelsRef());
-  ivhd.allocateInitializeDeviceMemory();
+  caster.sortHostSamples(data.labelsRef());
+  caster.allocateInitializeDeviceMemory();
   cudaDeviceSynchronize();
 
   auto now = system_clock::now();
   auto start = time_point_cast<milliseconds>(now).time_since_epoch().count();
 
   for (int i = 0; i < stoi(argv[3]); i++) {
-    ivhd.time_step_R(i == 0 ? true : false);
+    caster.simul_step(i == 0 ? true : false);
   }
   cudaDeviceSynchronize();
 
@@ -38,13 +37,12 @@ int main(int argc, char* argv[]) {
   auto totalTime =
       time_point_cast<milliseconds>(now).time_since_epoch().count() - start;
 
-  ivhd.copyResultsToHost();
-  /*cerr << "IVHD complete (" << totalTime << " ms)" << endl;*/
+  caster.copyResultsToHost();
   cerr << totalTime << endl;
 
   for (int i = 0; i < n; i++) {
     if (i % 10 == 0)
-      cout << ivhd.positions[i].x << " " << ivhd.positions[i].y << " "
+      cout << caster.positions[i].x << " " << caster.positions[i].y << " "
            << data.labels[i] << endl;
   }
 

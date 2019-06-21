@@ -5,60 +5,8 @@
 #include <iostream>
 #include <unordered_map>
 #include "constants.h"
-#include "ivhd.h"
+#include "caster.h"
 using namespace std;
-
-__global__ void calcPositions(long n, Sample *samples) {
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
-       i += blockDim.x * gridDim.x) {
-    Sample sample = samples[i];
-
-    for (int j = 0; j < sample.num_components; j++) {
-      sample.f.x += sample.components[j].x;
-      sample.f.y += sample.components[j].y;
-    }
-
-    sample.v.x = sample.v.x * a_factor + sample.f.x * b_factor;
-    sample.v.y = sample.v.y * a_factor + sample.f.y * b_factor;
-    sample.f = {0, 0};
-    sample.pos.x += sample.v.x;
-    sample.pos.y += sample.v.y;
-    samples[i] = sample;
-  }
-  return;
-}
-
-__global__ void calcForceComponents(int compNumber, DistElem *distances,
-                                    Sample *samples) {
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < compNumber;
-       i += blockDim.x * gridDim.x) {
-    DistElem distance = distances[i];
-
-    float2 posI = samples[distance.i].pos;
-    float2 posJ = samples[distance.j].pos;
-
-    float2 rv = posI;
-    rv.x -= posJ.x;
-    rv.y -= posJ.y;
-
-    float r = sqrtf((posI.x - posJ.x) * (posI.x - posJ.x) +
-                    (posI.y - posJ.y) * (posI.y - posJ.y));
-    float D = distance.r;
-
-    float energy = (r - D) / r;
-    rv.x *= -energy;
-    rv.y *= -energy;
-
-    // distances are sorted by their type
-    if (distance.type == etRandom) {
-      rv.x *= w_random;
-      rv.y *= w_random;
-    }
-    *distance.comp1 = rv;
-    *distance.comp2 = {-rv.x, -rv.y};
-  }
-  return;
-}
 
 // initialize pos in Samples
 // initialize num_components
@@ -88,7 +36,7 @@ __global__ void initializeDistances(int nDst, DistElem *distances,
   }
 }
 
-void IVHD::initializeHelperVectors() {
+void Caster::initializeHelperVectors() {
   /*
    * calculate number of distances for each sample and index of each distance
    * for a given sample
@@ -133,7 +81,7 @@ void IVHD::initializeHelperVectors() {
  * index i or j to utilize cache better. After sorting samples, their indexes
  * change so we have to update distances once more
  */
-void IVHD::sortHostSamples(vector<int> &labels) {
+void Caster::sortHostSamples(vector<int> &labels) {
   // create array of sorted indexes
   vector<short> sampleFreq(positions.size());
   for (int i = 0; i < positions.size(); i++) {
@@ -185,16 +133,7 @@ void IVHD::sortHostSamples(vector<int> &labels) {
        });
 }
 
-void IVHD::time_step_R(bool firstStep) {
-  if (firstStep) {
-    initializeHelperVectors();
-  } else {
-    calcPositions<<<64, 96>>>(positions.size(), d_samples);
-  }
-  calcForceComponents<<<64, 96>>>(distances.size(), d_distances, d_samples);
-}
-
-bool IVHD::allocateInitializeDeviceMemory() {
+bool Caster::allocateInitializeDeviceMemory() {
   cuCall(cudaMalloc(&d_positions, positions.size() * sizeof(float2)));
   cuCall(cudaMalloc(&d_samples, positions.size() * sizeof(Sample)));
   cuCall(cudaMalloc(&d_distances, distances.size() * sizeof(DistElem)));
@@ -217,7 +156,7 @@ __global__ void copyPosRelease(int N, Sample *samples, float2 *positions) {
   }
 }
 
-bool IVHD::copyResultsToHost() {
+bool Caster::copyResultsToHost() {
   copyPosRelease<<<positions.size() / 256 + 1, 256>>>(positions.size(),
                                                       d_samples, d_positions);
   cuCall(cudaMemcpy(&positions[0], d_positions,

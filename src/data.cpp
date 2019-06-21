@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <fstream>
 #include "knn_parser.h"
-#include "third_party/csv-parser/parser.hpp"
+#include "csv-parser/parser.hpp"
 using namespace std;
 
 float Data::calcEuclideanDistance(const vector<int>& v1,
