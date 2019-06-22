@@ -4,6 +4,7 @@
 #include <vector>
 #include "data.h"
 #include "caster/caster_cuda_ab.h"
+#include "caster/caster_ab.h"
 using namespace std;
 using namespace std::chrono;
 
@@ -12,8 +13,8 @@ int main(int argc, char* argv[]) {
   Data data;
   int n = data.load_mnist(argv[1]);
 
-  CasterAB casterAB(n);
-  Caster& caster = casterAB;
+  CasterCudaAB c(n);
+  Caster& caster = c;
   data.generateNearestDistances(caster, n, argv[2]);
   data.generateRandomDistances(caster, n);
 

@@ -55,7 +55,7 @@ __global__ void calcForceComponents(int compNumber, DistElem *distances,
   return;
 }
 
-void CasterAB::simul_step(bool firstStep) {
+void CasterCudaAB::simul_step(bool firstStep) {
   if (firstStep) {
     initializeHelperVectors();
   } else {
