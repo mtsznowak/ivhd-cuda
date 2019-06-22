@@ -5,13 +5,13 @@
 #include <iostream>
 #include <unordered_map>
 #include "constants.h"
-#include "caster.h"
+#include "cuda_caster.h"
 using namespace std;
 
 // initialize pos in Samples
 // initialize num_components
 __global__ void initializeSamples(int n, Sample *samples, float2 *positions,
-                                  short *sampleFreq) {
+    short *sampleFreq) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n) {
     Sample sample;
@@ -20,13 +20,13 @@ __global__ void initializeSamples(int n, Sample *samples, float2 *positions,
     sample.num_components = sampleFreq[i];
     // FIXME - malloc can return NULL
     sample.components =
-        (float2 *)malloc(sample.num_components * sizeof(float2));
+      (float2 *)malloc(sample.num_components * sizeof(float2));
     samples[i] = sample;
   }
 }
 
 __global__ void initializeDistances(int nDst, DistElem *distances,
-                                    short2 *dstIndexes, Sample *samples) {
+    short2 *dstIndexes, Sample *samples) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < nDst) {
     DistElem dst = distances[i];
@@ -36,7 +36,7 @@ __global__ void initializeDistances(int nDst, DistElem *distances,
   }
 }
 
-void Caster::initializeHelperVectors() {
+void CudaCaster::initializeHelperVectors() {
   /*
    * calculate number of distances for each sample and index of each distance
    * for a given sample
@@ -50,14 +50,14 @@ void Caster::initializeHelperVectors() {
 
   for (int i = 0; i < distances.size(); i++) {
     dstIndexes[i] = {sampleFreq[distances[i].i]++,
-                     sampleFreq[distances[i].j]++};
+      sampleFreq[distances[i].j]++};
   }
 
   // initialize samples
   short *d_sample_freq;
   cuCall(cudaMalloc(&d_sample_freq, positions.size() * sizeof(short)));
   cuCall(cudaMemcpy(d_sample_freq, sampleFreq, sizeof(short) * positions.size(),
-                    cudaMemcpyHostToDevice));
+        cudaMemcpyHostToDevice));
 
   initializeSamples<<<positions.size() / 256 + 1, 256>>>(
       positions.size(), d_samples, d_positions, d_sample_freq);
@@ -67,7 +67,7 @@ void Caster::initializeHelperVectors() {
   short2 *d_dst_indexes;
   cuCall(cudaMalloc(&d_dst_indexes, distances.size() * sizeof(short2)));
   cuCall(cudaMemcpy(d_dst_indexes, dstIndexes,
-                    sizeof(short2) * distances.size(), cudaMemcpyHostToDevice));
+        sizeof(short2) * distances.size(), cudaMemcpyHostToDevice));
 
   initializeDistances<<<distances.size() / 256 + 1, 256>>>(
       distances.size(), d_distances, d_dst_indexes, d_samples);
@@ -81,7 +81,7 @@ void Caster::initializeHelperVectors() {
  * index i or j to utilize cache better. After sorting samples, their indexes
  * change so we have to update distances once more
  */
-void Caster::sortHostSamples(vector<int> &labels) {
+void CudaCaster::sortHostSamples(vector<int> &labels) {
   // create array of sorted indexes
   vector<short> sampleFreq(positions.size());
   for (int i = 0; i < positions.size(); i++) {
@@ -94,13 +94,13 @@ void Caster::sortHostSamples(vector<int> &labels) {
   }
 
   sort(sampleIndexes.begin(), sampleIndexes.end(),
-       [&sampleFreq](const int &a, const int &b) -> bool {
-         if (sampleFreq[a] != sampleFreq[b]) {
-           return sampleFreq[a] < sampleFreq[b];
-         } else {
-           return a < b;
-         }
-       });
+      [&sampleFreq](const int &a, const int &b) -> bool {
+      if (sampleFreq[a] != sampleFreq[b]) {
+      return sampleFreq[a] < sampleFreq[b];
+      } else {
+      return a < b;
+      }
+      });
 
   // create mapping index->new index
   vector<int> newIndexes(positions.size());
@@ -124,26 +124,26 @@ void Caster::sortHostSamples(vector<int> &labels) {
 
   // sort distances
   sort(distances.begin(), distances.end(),
-       [](const DistElem &a, const DistElem &b) -> bool {
-         if (a.i != b.i) {
-           return a.i < b.i;
-         } else {
-           return a.j <= b.j;
-         }
-       });
+      [](const DistElem &a, const DistElem &b) -> bool {
+      if (a.i != b.i) {
+      return a.i < b.i;
+      } else {
+      return a.j <= b.j;
+      }
+      });
 }
 
-bool Caster::allocateInitializeDeviceMemory() {
+bool CudaCaster::allocateInitializeDeviceMemory() {
   cuCall(cudaMalloc(&d_positions, positions.size() * sizeof(float2)));
   cuCall(cudaMalloc(&d_samples, positions.size() * sizeof(Sample)));
   cuCall(cudaMalloc(&d_distances, distances.size() * sizeof(DistElem)));
 
   cuCall(cudaMemcpy(d_positions, &positions[0],
-                    sizeof(float2) * positions.size(), cudaMemcpyHostToDevice));
+        sizeof(float2) * positions.size(), cudaMemcpyHostToDevice));
   cuCall(cudaMemset(d_samples, 0, positions.size() * sizeof(Sample)));
   cuCall(cudaMemcpy(d_distances, &distances[0],
-                    sizeof(DistElem) * distances.size(),
-                    cudaMemcpyHostToDevice));
+        sizeof(DistElem) * distances.size(),
+        cudaMemcpyHostToDevice));
 
   return true;
 }
@@ -156,11 +156,20 @@ __global__ void copyPosRelease(int N, Sample *samples, float2 *positions) {
   }
 }
 
-bool Caster::copyResultsToHost() {
+void CudaCaster::prepare(vector<int> &labels){
+  sortHostSamples(labels);
+  allocateInitializeDeviceMemory();
+}
+
+void CudaCaster::finish(){
+  copyResultsToHost();
+}
+
+bool CudaCaster::copyResultsToHost() {
   copyPosRelease<<<positions.size() / 256 + 1, 256>>>(positions.size(),
-                                                      d_samples, d_positions);
+      d_samples, d_positions);
   cuCall(cudaMemcpy(&positions[0], d_positions,
-                    sizeof(float2) * positions.size(), cudaMemcpyDeviceToHost));
+        sizeof(float2) * positions.size(), cudaMemcpyDeviceToHost));
   cuCall(cudaFree(d_positions));
   cuCall(cudaFree(d_distances));
   cuCall(cudaFree(d_samples));

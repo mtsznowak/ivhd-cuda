@@ -1,5 +1,12 @@
-set(CPP_SOURCE_FILES data.cpp knn_parser.cpp)
-set(CUDA_SOURCE_FILES caster.cu caster_ab.cu main.cpp)
+set(CPP_SOURCE_FILES 
+    data.cpp 
+    knn_parser.cpp
+)
+set(CUDA_SOURCE_FILES
+    cuda_caster.cu
+    caster_ab.cu
+    main.cpp
+)
 
 CUDA_ADD_EXECUTABLE(${EXECUTABLE_NAME} ${CPP_SOURCE_FILES} ${CUDA_SOURCE_FILES})
 

@@ -12,7 +12,8 @@ int main(int argc, char* argv[]) {
   Data data;
   int n = data.load_mnist(argv[1]);
 
-  CasterAB caster(n);
+  CasterAB casterAB(n);
+  Caster& caster = casterAB;
   data.generateNearestDistances(caster, n, argv[2]);
   data.generateRandomDistances(caster, n);
 
@@ -21,8 +22,7 @@ int main(int argc, char* argv[]) {
     caster.positions[i].y = rand() % 100000 / 100000.0;
   }
 
-  caster.sortHostSamples(data.labelsRef());
-  caster.allocateInitializeDeviceMemory();
+  caster.prepare(data.labelsRef());
   cudaDeviceSynchronize();
 
   auto now = system_clock::now();
@@ -36,9 +36,9 @@ int main(int argc, char* argv[]) {
   now = system_clock::now();
   auto totalTime =
       time_point_cast<milliseconds>(now).time_since_epoch().count() - start;
-
-  caster.copyResultsToHost();
   cerr << totalTime << endl;
+
+  caster.finish();
 
   for (int i = 0; i < n; i++) {
     if (i % 10 == 0)
