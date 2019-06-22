@@ -9,7 +9,10 @@ find_package(Boost REQUIRED)
 
 INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
 
-include_directories(${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/third_party)
+include_directories(
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/third_party
+)
 
 # Compilation flags
 set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS};-std=c++11)

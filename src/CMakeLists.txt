@@ -3,8 +3,8 @@ set(CPP_SOURCE_FILES
     knn_parser.cpp
 )
 set(CUDA_SOURCE_FILES
-    cuda_caster.cu
-    caster_ab.cu
+    caster/caster_cuda.cu
+    caster/caster_cuda_ab.cu
     main.cpp
 )
 

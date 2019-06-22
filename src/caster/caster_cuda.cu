@@ -5,7 +5,7 @@
 #include <iostream>
 #include <unordered_map>
 #include "constants.h"
-#include "cuda_caster.h"
+#include "caster/caster_cuda.h"
 using namespace std;
 
 // initialize pos in Samples
@@ -36,7 +36,7 @@ __global__ void initializeDistances(int nDst, DistElem *distances,
   }
 }
 
-void CudaCaster::initializeHelperVectors() {
+void CasterCuda::initializeHelperVectors() {
   /*
    * calculate number of distances for each sample and index of each distance
    * for a given sample
@@ -81,7 +81,7 @@ void CudaCaster::initializeHelperVectors() {
  * index i or j to utilize cache better. After sorting samples, their indexes
  * change so we have to update distances once more
  */
-void CudaCaster::sortHostSamples(vector<int> &labels) {
+void CasterCuda::sortHostSamples(vector<int> &labels) {
   // create array of sorted indexes
   vector<short> sampleFreq(positions.size());
   for (int i = 0; i < positions.size(); i++) {
@@ -133,7 +133,7 @@ void CudaCaster::sortHostSamples(vector<int> &labels) {
       });
 }
 
-bool CudaCaster::allocateInitializeDeviceMemory() {
+bool CasterCuda::allocateInitializeDeviceMemory() {
   cuCall(cudaMalloc(&d_positions, positions.size() * sizeof(float2)));
   cuCall(cudaMalloc(&d_samples, positions.size() * sizeof(Sample)));
   cuCall(cudaMalloc(&d_distances, distances.size() * sizeof(DistElem)));
@@ -156,16 +156,16 @@ __global__ void copyPosRelease(int N, Sample *samples, float2 *positions) {
   }
 }
 
-void CudaCaster::prepare(vector<int> &labels){
+void CasterCuda::prepare(vector<int> &labels){
   sortHostSamples(labels);
   allocateInitializeDeviceMemory();
 }
 
-void CudaCaster::finish(){
+void CasterCuda::finish(){
   copyResultsToHost();
 }
 
-bool CudaCaster::copyResultsToHost() {
+bool CasterCuda::copyResultsToHost() {
   copyPosRelease<<<positions.size() / 256 + 1, 256>>>(positions.size(),
       d_samples, d_positions);
   cuCall(cudaMemcpy(&positions[0], d_positions,

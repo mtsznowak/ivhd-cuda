@@ -1,6 +1,6 @@
 #include <cuda.h>
 #include "constants.h"
-#include "caster_ab.h"
+#include "caster/caster_cuda_ab.h"
 using namespace std;
 
 __global__ void calcPositions(long n, Sample *samples) {
