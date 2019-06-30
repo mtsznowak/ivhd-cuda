@@ -2,9 +2,11 @@
 #include <chrono>
 #include <iostream>
 #include <vector>
+#include <fstream>
 #include "data.h"
 #include "caster/caster_cuda_ab.h"
 #include "caster/caster_ab.h"
+#include "caster/caster_sgd.h"
 using namespace std;
 using namespace std::chrono;
 
@@ -13,7 +15,8 @@ int main(int argc, char* argv[]) {
   Data data;
   int n = data.load_mnist(argv[1]);
 
-  CasterCudaAB c(n);
+  //CasterSGD c(n);
+  CasterAB c(n);
   Caster& caster = c;
   data.generateNearestDistances(caster, n, argv[2]);
   data.generateRandomDistances(caster, n);
@@ -41,11 +44,14 @@ int main(int argc, char* argv[]) {
 
   caster.finish();
 
+  ofstream results;
+  results.open("result");
   for (int i = 0; i < n; i++) {
     if (i % 10 == 0)
-      cout << caster.positions[i].x << " " << caster.positions[i].y << " "
+      results << caster.positions[i].x << " " << caster.positions[i].y << " "
            << data.labels[i] << endl;
   }
+  results.close();
 
   return 0;
 }
