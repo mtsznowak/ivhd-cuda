@@ -14,10 +14,6 @@ class CasterAB : public Caster {
 
  private:
   float2 force(DistElem distance);
-  float shrink_near = 0, shrink_far = 1;
-  float sammon_k = 1;
-  float sammon_m = 2;
-  float sammon_w = 0;
   float a_factor = 0.990545;
   float b_factor = 0.000200945;
   float w_near = 1;
