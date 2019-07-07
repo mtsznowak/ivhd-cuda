@@ -10,16 +10,47 @@
 using namespace std;
 using namespace std::chrono;
 
-int main(int argc, char* argv[]) {
-  /*cerr << "loading dataset" << endl;*/
-  Data data;
-  int n = data.load_mnist(argv[1]);
+string dataset_file;
+string knn_file;
+string experiment_name;
+string algorithm_name;
+unsigned iterations;
 
-  auto now = system_clock::now();
-  auto start = time_point_cast<milliseconds>(now).time_since_epoch().count();
+void parseArg(int argc, char* argv[]) {
+  if (argc != 6) {
+    cerr << "Expected 5 arguments:\n";
+    cerr << "./ivhd dataset_file knn_file iterations experiment_name "
+            "algorithm_name\n";
+    exit(0);
+  }
+
+  dataset_file = argv[1];
+  knn_file = argv[2];
+  iterations = stoi(argv[3]);
+  experiment_name = argv[4];
+  algorithm_name = argv[5];
+}
+
+Caster* getCaster(int n, function<void(float)> onError) {
+  if (algorithm_name == "ab") {
+    return new CasterAB(n, onError);
+  } else if (algorithm_name == "cuda_ab") {
+    return new CasterCudaAB(n, onError);
+  }
+  return nullptr;
+}
+
+int main(int argc, char* argv[]) {
+  parseArg(argc, argv);
+
+  Data data;
+  int n = data.load_mnist(dataset_file);
+
+  system_clock::time_point now = system_clock::now();
+  long start = time_point_cast<milliseconds>(now).time_since_epoch().count();
 
   ofstream errFile;
-  errFile.open("error");
+  errFile.open(experiment_name + "_error");
   auto onError = [&](float err) -> void {
     now = system_clock::now();
     auto time =
@@ -27,10 +58,11 @@ int main(int argc, char* argv[]) {
 
     errFile << time << " " << err << endl;
   };
-  // CasterSGD c(n);
-  CasterAB c(n, onError);
-  Caster& caster = c;
-  data.generateNearestDistances(caster, n, argv[2]);
+
+  Caster* casterPtr = getCaster(n, onError);
+  Caster& caster = *casterPtr;
+
+  data.generateNearestDistances(caster, n, knn_file);
   data.generateRandomDistances(caster, n);
 
   for (int i = 0; i < n; i++) {
@@ -44,7 +76,7 @@ int main(int argc, char* argv[]) {
   now = system_clock::now();
   start = time_point_cast<milliseconds>(now).time_since_epoch().count();
 
-  for (int i = 0; i < stoi(argv[3]); i++) {
+  for (int i = 0; i < iterations; i++) {
     caster.simul_step(i == 0 ? true : false);
   }
   cudaDeviceSynchronize();
@@ -57,7 +89,7 @@ int main(int argc, char* argv[]) {
   caster.finish();
 
   ofstream results;
-  results.open("result");
+  results.open(experiment_name + "_result");
   for (int i = 0; i < n; i++) {
     if (i % 10 == 0)
       results << caster.positions[i].x << " " << caster.positions[i].y << " "
