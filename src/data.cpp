@@ -42,7 +42,7 @@ int Data::load_mnist(std::string file) {
 void Data::generateRandomDistances(IDistanceContainer& dstContainer, int n) {
   for (int i = 0; i < n; i++) {
     int randIndex = rand() % n;
-    while (randIndex == i) {
+    while (randIndex == i && !dstContainer.containsDst(i, randIndex)) {
       randIndex = rand() % n;
     }
 
