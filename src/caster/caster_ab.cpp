@@ -53,4 +53,14 @@ void CasterAB::simul_step(bool firstStep) {
     f[distances[i].j].x -= df.x;
     f[distances[i].j].y -= df.y;
   }
+
+  float err = 0.0;
+  for (auto& dist : distances) {
+    float d = dist.r;
+    float2 iPos = positions[dist.i];
+    float2 jPos = positions[dist.j];
+    float2 ij = {iPos.x - jPos.x, jPos.y - jPos.y};
+    err += abs(d - sqrt(ij.x * ij.x + ij.y * ij.y));
+  }
+  onError(err);
 }

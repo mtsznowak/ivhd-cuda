@@ -3,6 +3,6 @@ using namespace std;
 
 class CasterCudaAB : public CasterCuda {
  public:
-  CasterCudaAB(int n) : CasterCuda(n) {}
+  CasterCudaAB(int n, function<void(float)> onErr) : CasterCuda(n, onErr) {}
   void simul_step(bool firstStep) override;
 };

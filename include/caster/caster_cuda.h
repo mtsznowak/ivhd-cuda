@@ -1,7 +1,7 @@
 #include <vector>
+#include "caster/caster.h"
 #include "distance.h"
 #include "distance_container.h"
-#include "caster/caster.h"
 using namespace std;
 
 struct Sample {
@@ -14,7 +14,7 @@ struct Sample {
 
 class CasterCuda : public Caster {
  public:
-  CasterCuda(int n) : Caster(n) {}
+  CasterCuda(int n, function<void(float)> onErr) : Caster(n, onErr) {}
 
   void sortHostSamples(vector<int> &labels);
 
