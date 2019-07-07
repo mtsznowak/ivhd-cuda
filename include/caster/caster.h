@@ -10,7 +10,7 @@ class Caster : public IDistanceContainer {
   Caster(int n, function<void(float)> onErrorCallback) : positions(n) {
     onError = onErrorCallback;
   }
-  virtual void simul_step(bool firstStep) = 0;
+  virtual void simul_step() = 0;
   virtual void prepare(vector<int> &labels){};
   virtual void finish(){};
 

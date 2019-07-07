@@ -24,9 +24,15 @@ class CasterCuda : public Caster {
 
   virtual void prepare(vector<int> &labels) override;
   virtual void finish() override;
+  virtual void simul_step() override;
+
   bool allocateInitializeDeviceMemory();
   bool copyResultsToHost();
 
  protected:
   void initializeHelperVectors();
+  virtual void simul_step_cuda() = 0;
+
+ private:
+  unsigned it = 0;
 };

@@ -176,3 +176,13 @@ bool CasterCuda::copyResultsToHost() {
 
   return true;
 }
+
+void CasterCuda::simul_step() {
+  if (!it++) {
+    initializeHelperVectors();
+  }
+  simul_step_cuda();
+
+  onError(0);
+};
+

@@ -55,11 +55,7 @@ __global__ void calcForceComponents(int compNumber, DistElem *distances,
   return;
 }
 
-void CasterCudaAB::simul_step(bool firstStep) {
-  if (firstStep) {
-    initializeHelperVectors();
-  } else {
-    calcPositions<<<64, 96>>>(positions.size(), d_samples);
-  }
+void CasterCudaAB::simul_step_cuda() {
   calcForceComponents<<<64, 96>>>(distances.size(), d_distances, d_samples);
+  calcPositions<<<64, 96>>>(positions.size(), d_samples);
 }

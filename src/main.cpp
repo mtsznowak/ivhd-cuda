@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
   start = time_point_cast<milliseconds>(now).time_since_epoch().count();
 
   for (int i = 0; i < iterations; i++) {
-    caster.simul_step(i == 0 ? true : false);
+    caster.simul_step();
   }
   cudaDeviceSynchronize();
 
