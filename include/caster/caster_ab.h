@@ -14,10 +14,8 @@ class CasterAB : public Caster {
 
  private:
   float2 force(DistElem distance);
-  float a_factor = 0.990545;
-  float b_factor = 0.000200945;
-  float w_near = 1;
+  float a_factor = 0.9;
+  float b_factor = 0.01;
   float w_random = 0.01;
-  float w_far = 1;
   unsigned it = 0;
 };

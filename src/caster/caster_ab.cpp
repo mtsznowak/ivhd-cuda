@@ -18,7 +18,6 @@ float2 CasterAB::force(DistElem distance) {
 }
 
 void CasterAB::simul_step() {
-
   // calculate forces
   for (int i = 0; i < f.size(); i++) {
     f[i] = {0, 0};
@@ -27,15 +26,9 @@ void CasterAB::simul_step() {
   for (int i = 0; i < distances.size(); i++) {
     float2 df = force(distances[i]);
 
-    if (distances[i].type == etNear) {
-      df.x *= w_near;
-      df.y *= w_near;
-    } else if (distances[i].type == etRandom) {
+    if (distances[i].type == etRandom) {
       df.x *= w_random;
       df.y *= w_random;
-    } else {
-      df.y *= w_far;
-      df.x *= w_far;
     }
 
     f[distances[i].i].x += df.x;
@@ -52,13 +45,15 @@ void CasterAB::simul_step() {
     positions[i].y += v[i].y;
   }
 
-  float err = 0.0;
-  for (auto& dist : distances) {
-    float d = dist.r;
-    float2 iPos = positions[dist.i];
-    float2 jPos = positions[dist.j];
-    float2 ij = {iPos.x - jPos.x, jPos.y - jPos.y};
-    err += abs(d - sqrt(ij.x * ij.x + ij.y * ij.y));
+  if(it++ % 100 == 0) {
+    float err = 0.0;
+    for (auto& dist : distances) {
+      float d = dist.r;
+      float2 iPos = positions[dist.i];
+      float2 jPos = positions[dist.j];
+      float2 ij = {iPos.x - jPos.x, jPos.y - jPos.y};
+      err += abs(d - sqrt(ij.x * ij.x + ij.y * ij.y));
+    }
+    onError(err);
   }
-  onError(err);
 }

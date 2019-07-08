@@ -21,7 +21,7 @@ void parseArg(int argc, char* argv[]) {
     cerr << "Expected 5 arguments:\n";
     cerr << "./ivhd dataset_file knn_file iterations experiment_name "
             "algorithm_name\n";
-    exit(0);
+    exit(-1);
   }
 
   dataset_file = argv[1];
@@ -36,8 +36,10 @@ Caster* getCaster(int n, function<void(float)> onError) {
     return new CasterAB(n, onError);
   } else if (algorithm_name == "cuda_ab") {
     return new CasterCudaAB(n, onError);
+  } else {
+    cerr << "Invalid algorithm_name. Expected one of: \"ab\", \"cuda_ab\"\n";
+    exit(-1);
   }
-  return nullptr;
 }
 
 int main(int argc, char* argv[]) {

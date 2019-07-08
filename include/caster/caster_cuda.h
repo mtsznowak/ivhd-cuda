@@ -21,6 +21,7 @@ class CasterCuda : public Caster {
   float2 *d_positions;
   DistElem *d_distances;
   Sample *d_samples;
+  float *d_errors;
 
   virtual void prepare(vector<int> &labels) override;
   virtual void finish() override;
@@ -32,6 +33,7 @@ class CasterCuda : public Caster {
  protected:
   void initializeHelperVectors();
   virtual void simul_step_cuda() = 0;
+  virtual float getError();
 
  private:
   unsigned it = 0;

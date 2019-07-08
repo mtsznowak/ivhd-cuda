@@ -4,6 +4,9 @@
 #include <cstring>
 #include <iostream>
 #include <unordered_map>
+#include <thrust/execution_policy.h>
+#include <thrust/device_ptr.h>
+#include <thrust/reduce.h>
 #include "constants.h"
 #include "caster/caster_cuda.h"
 using namespace std;
@@ -137,10 +140,12 @@ bool CasterCuda::allocateInitializeDeviceMemory() {
   cuCall(cudaMalloc(&d_positions, positions.size() * sizeof(float2)));
   cuCall(cudaMalloc(&d_samples, positions.size() * sizeof(Sample)));
   cuCall(cudaMalloc(&d_distances, distances.size() * sizeof(DistElem)));
+  cuCall(cudaMalloc(&d_errors, distances.size() * sizeof(float)));
 
   cuCall(cudaMemcpy(d_positions, &positions[0],
         sizeof(float2) * positions.size(), cudaMemcpyHostToDevice));
   cuCall(cudaMemset(d_samples, 0, positions.size() * sizeof(Sample)));
+  cuCall(cudaMemset(d_errors, 0, distances.size() * sizeof(float)));
   cuCall(cudaMemcpy(d_distances, &distances[0],
         sizeof(DistElem) * distances.size(),
         cudaMemcpyHostToDevice));
@@ -177,12 +182,34 @@ bool CasterCuda::copyResultsToHost() {
   return true;
 }
 
+__global__ void calculateErrors(int dstNum, DistElem *distances, Sample *samples, float *errors) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < dstNum;
+      i += blockDim.x * gridDim.x) {
+    DistElem dist = distances[i];
+    float d = dist.r;
+    float2 iPos = samples[dist.i].pos;
+    float2 jPos = samples[dist.j].pos;
+    float2 ij = {iPos.x - jPos.x, jPos.y - jPos.y};
+    errors[i] = abs(d - sqrt(ij.x * ij.x + ij.y * ij.y));
+  }
+}
+
+float CasterCuda::getError() {
+  calculateErrors<<<64, 96>>>(distances.size(), d_distances,
+      d_samples, d_errors);
+
+  thrust::device_ptr<float> err_ptr = thrust::device_pointer_cast(d_errors);
+  return thrust::reduce(err_ptr, err_ptr + distances.size(), 0, thrust::plus<float>());
+}
+
 void CasterCuda::simul_step() {
   if (!it++) {
     initializeHelperVectors();
   }
+
   simul_step_cuda();
 
-  onError(0);
+  if(it % 100 == 0) {
+    onError(getError());
+  }
 };
-
