@@ -1,3 +1,4 @@
+#pragma once
 #include <vector>
 #include "caster/caster.h"
 #include "distance.h"

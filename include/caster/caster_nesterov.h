@@ -3,9 +3,9 @@
 #include "distance.h"
 using namespace std;
 
-class CasterAB : public CasterCPU {
+class CasterNesterov : public CasterCPU {
  public:
-  CasterAB(int n, function<void(float)> onErr)
+  CasterNesterov(int n, function<void(float)> onErr)
       : CasterCPU(n, onErr), v(n, {0, 0}), f(n, {0, 0}) {}
   virtual void simul_step_cpu() override;
 

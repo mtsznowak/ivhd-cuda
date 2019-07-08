@@ -5,6 +5,8 @@
 #include <vector>
 #include "caster/caster_ab.h"
 #include "caster/caster_cuda_ab.h"
+#include "caster/caster_cuda_nesterov.h"
+#include "caster/caster_nesterov.h"
 #include "data.h"
 using namespace std;
 using namespace std::chrono;
@@ -33,10 +35,15 @@ void parseArg(int argc, char* argv[]) {
 Caster* getCaster(int n, function<void(float)> onError) {
   if (algorithm_name == "ab") {
     return new CasterAB(n, onError);
+  } else if (algorithm_name == "nesterov") {
+    return new CasterNesterov(n, onError);
   } else if (algorithm_name == "cuda_ab") {
     return new CasterCudaAB(n, onError);
+  } else if (algorithm_name == "cuda_nesterov") {
+    return new CasterCudaNesterov(n, onError);
   } else {
-    cerr << "Invalid algorithm_name. Expected one of: \"ab\", \"cuda_ab\"\n";
+    cerr << "Invalid algorithm_name. Expected one of: 'ab', 'cuda_ab', ";
+    cerr << "'nesterov', 'cuda_nesterov'\n";
     exit(-1);
   }
 }
