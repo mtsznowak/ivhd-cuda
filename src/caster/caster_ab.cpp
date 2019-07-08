@@ -17,7 +17,7 @@ float2 CasterAB::force(DistElem distance) {
   return {rv.x * energy, rv.y * energy};
 }
 
-void CasterAB::simul_step() {
+void CasterAB::simul_step_cpu() {
   // calculate forces
   for (int i = 0; i < f.size(); i++) {
     f[i] = {0, 0};
@@ -43,17 +43,5 @@ void CasterAB::simul_step() {
     v[i].y = v[i].y * a_factor + f[i].y * b_factor;
     positions[i].x += v[i].x;
     positions[i].y += v[i].y;
-  }
-
-  if(it++ % 100 == 0) {
-    float err = 0.0;
-    for (auto& dist : distances) {
-      float d = dist.r;
-      float2 iPos = positions[dist.i];
-      float2 jPos = positions[dist.j];
-      float2 ij = {iPos.x - jPos.x, jPos.y - jPos.y};
-      err += abs(d - sqrt(ij.x * ij.x + ij.y * ij.y));
-    }
-    onError(err);
   }
 }

@@ -5,7 +5,6 @@
 #include <vector>
 #include "caster/caster_ab.h"
 #include "caster/caster_cuda_ab.h"
-#include "caster/caster_sgd.h"
 #include "data.h"
 using namespace std;
 using namespace std::chrono;

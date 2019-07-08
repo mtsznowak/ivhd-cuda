@@ -2,7 +2,6 @@ set(CPP_SOURCE_FILES
     data.cpp 
     knn_parser.cpp
     caster/caster_ab.cpp
-    caster/caster_sgd.cpp
 )
 set(CUDA_SOURCE_FILES
     caster/caster_cuda.cu

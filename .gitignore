@@ -8,4 +8,7 @@ result*
 *.so
 notes
 Session.vim
+build/
+data/
+.ipynb_checkpoints/
 
