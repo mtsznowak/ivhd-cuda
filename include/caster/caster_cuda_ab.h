@@ -1,3 +1,4 @@
+#pragma once
 #include "caster/caster_cuda.h"
 using namespace std;
 

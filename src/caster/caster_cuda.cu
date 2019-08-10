@@ -19,7 +19,7 @@ __global__ void initializeSamples(int n, Sample *samples, float2 *positions,
   if (i < n) {
     Sample sample;
     sample.pos = positions[i];
-    sample.v = sample.f = {0, 0};
+    sample.v = {0, 0};
     sample.num_components = sampleFreq[i];
     // FIXME - malloc can return NULL
     sample.components =

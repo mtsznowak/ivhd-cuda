@@ -8,7 +8,6 @@ using namespace std;
 struct Sample {
   float2 pos;
   float2 v;
-  float2 f;
   float2 *components;
   short num_components;
 };

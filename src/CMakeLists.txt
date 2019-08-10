@@ -3,11 +3,15 @@ set(CPP_SOURCE_FILES
     knn_parser.cpp
     caster/caster_ab.cpp
     caster/caster_nesterov.cpp
+    caster/caster_adadelta_async.cpp
+    caster/caster_adadelta_sync.cpp
 )
 set(CUDA_SOURCE_FILES
     caster/caster_cuda.cu
     caster/caster_cuda_ab.cu
     caster/caster_cuda_nesterov.cu
+    caster/caster_cuda_adadelta.cu
+    caster/caster_cuda_adam.cu
     main.cpp
 )
 
