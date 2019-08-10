@@ -63,6 +63,7 @@ Caster* getCaster(int n, function<void(float)> onError) {
 
 int main(int argc, char* argv[]) {
   parseArg(argc, argv);
+  srand( time( NULL ) );
 
   Data data;
   int n = data.load_mnist(dataset_file);

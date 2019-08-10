@@ -195,7 +195,7 @@ __global__ void calculateErrors(int dstNum, DistElem *distances, Sample *samples
 }
 
 float CasterCuda::getError() {
-  calculateErrors<<<64, 96>>>(distances.size(), d_distances,
+  calculateErrors<<<256, 256>>>(distances.size(), d_distances,
       d_samples, d_errors);
 
   thrust::device_ptr<float> err_ptr = thrust::device_pointer_cast(d_errors);

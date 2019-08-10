@@ -66,6 +66,6 @@ __global__ void calcForceComponentsNesterov(int compNumber, DistElem *distances,
 }
 
 void CasterCudaNesterov::simul_step_cuda() {
-  calcForceComponentsNesterov<<<64, 96>>>(distances.size(), d_distances, d_samples);
-  calcPositionsNesterov<<<64, 96>>>(positions.size(), d_samples);
+  calcForceComponentsNesterov<<<256, 256>>>(distances.size(), d_distances, d_samples);
+  calcPositionsNesterov<<<256, 256>>>(positions.size(), d_samples);
 }

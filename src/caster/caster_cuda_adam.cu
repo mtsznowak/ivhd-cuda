@@ -71,8 +71,8 @@ __global__ void calcForceComponentsAdam(int compNumber, DistElem *distances,
 }
 
 void CasterCudaAdam::simul_step_cuda() {
-  calcForceComponentsAdam<<<64, 96>>>(distances.size(), d_distances, d_samples);
-  calcPositionsAdam<<<64, 96>>>(positions.size(), d_samples, d_average_params);
+  calcForceComponentsAdam<<<256, 256>>>(distances.size(), d_distances, d_samples);
+  calcPositionsAdam<<<256, 256>>>(positions.size(), d_samples, d_average_params);
 }
 
 void CasterCudaAdam::prepare(vector<int> &labels) {

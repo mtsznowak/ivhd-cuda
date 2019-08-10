@@ -69,8 +69,8 @@ __global__ void calcForceComponentsAdadelta(int compNumber, DistElem *distances,
 }
 
 void CasterCudaAdadelta::simul_step_cuda() {
-  calcForceComponentsAdadelta<<<64, 96>>>(distances.size(), d_distances, d_samples);
-  calcPositionsAdadelta<<<64, 96>>>(positions.size(), d_samples, d_average_params);
+  calcForceComponentsAdadelta<<<256, 256>>>(distances.size(), d_distances, d_samples);
+  calcPositionsAdadelta<<<256, 256>>>(positions.size(), d_samples, d_average_params);
 }
 
 void CasterCudaAdadelta::prepare(vector<int> &labels) {

@@ -58,6 +58,6 @@ __global__ void calcForceComponents(int compNumber, DistElem *distances,
 }
 
 void CasterCudaAB::simul_step_cuda() {
-  calcForceComponents<<<64, 96>>>(distances.size(), d_distances, d_samples);
-  calcPositions<<<64, 96>>>(positions.size(), d_samples);
+  calcForceComponents<<<256, 256>>>(distances.size(), d_distances, d_samples);
+  calcPositions<<<256, 256>>>(positions.size(), d_samples);
 }
