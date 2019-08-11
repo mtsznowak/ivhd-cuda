@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
     errFile << time << " " << err << endl;
   };
 
-  auto onPos = [&](vector<float2> &positions) -> void {
+  auto onPos = [&](vector<float2>& positions) -> void {
     now = system_clock::now();
     auto time =
         time_point_cast<milliseconds>(now).time_since_epoch().count() - start;
@@ -90,12 +90,12 @@ int main(int argc, char* argv[]) {
     ofstream posFile;
     posFile.open(experiment_name + "_" + to_string(time) + "_positions");
 
-    for(int i=0; i<positions.size(); i++) {
-      posFile << positions[i].x << " " << positions[i].y << " " << data.labels[i] << endl;
+    for (int i = 0; i < positions.size(); i++) {
+      posFile << positions[i].x << " " << positions[i].y << " "
+              << data.labels[i] << endl;
     }
 
     posFile.close();
-
   };
 
   Caster* casterPtr = getCaster(n, onError, onPos);
@@ -130,9 +130,8 @@ int main(int argc, char* argv[]) {
   ofstream results;
   results.open(experiment_name + "_result");
   for (int i = 0; i < n; i++) {
-    if (i % 10 == 0)
-      results << caster.positions[i].x << " " << caster.positions[i].y << " "
-              << data.labels[i] << endl;
+    results << caster.positions[i].x << " " << caster.positions[i].y << " "
+            << data.labels[i] << endl;
   }
 
   results.close();
