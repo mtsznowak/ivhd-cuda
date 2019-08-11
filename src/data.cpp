@@ -2,8 +2,8 @@
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
-#include "knn_parser.h"
 #include "csv-parser/parser.hpp"
+#include "knn_parser.h"
 using namespace std;
 
 float Data::calcEuclideanDistance(const vector<int>& v1,
@@ -20,11 +20,19 @@ int Data::load_mnist(std::string file) {
   int n, m;
 
   f >> n >> m;
+
+  f.clear();
+  f.seekg(0);
   aria::csv::CsvParser parser(f);
 
   mnist.resize(n);
   int mnist_ind = 0;
+  int parserit = 0;
   for (auto& row : parser) {
+    if (parserit++ <= 1) {
+      continue;
+    }
+
     int i = 0;
     for (string field : row) {
       if (i++ == m) {
