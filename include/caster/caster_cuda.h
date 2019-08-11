@@ -14,7 +14,8 @@ struct Sample {
 
 class CasterCuda : public Caster {
  public:
-  CasterCuda(int n, function<void(float)> onErr) : Caster(n, onErr) {}
+  CasterCuda(int n, function<void(float)> onErr, function<void(vector<float2>&)> onPos)
+      : Caster(n, onErr, onPos) {}
 
   void sortHostSamples(vector<int> &labels);
 
@@ -34,6 +35,8 @@ class CasterCuda : public Caster {
   void initializeHelperVectors();
   virtual void simul_step_cuda() = 0;
   virtual float getError();
+  void copyPositions();
+  int itToPosReady = -1;
 
  private:
   unsigned it = 0;

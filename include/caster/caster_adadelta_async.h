@@ -5,8 +5,9 @@ using namespace std;
 
 class CasterAdadeltaAsync : public CasterCPU {
  public:
-  CasterAdadeltaAsync(int n, function<void(float)> onErr)
-      : CasterCPU(n, onErr),
+  CasterAdadeltaAsync(int n, function<void(float)> onErr,
+                      function<void(vector<float2>&)> onPos)
+      : CasterCPU(n, onErr, onPos),
         v(n, {0, 0}),
         f(n, {0, 0}),
         decGrad(n, {0, 0}),

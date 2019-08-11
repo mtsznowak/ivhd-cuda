@@ -36,23 +36,24 @@ void parseArg(int argc, char* argv[]) {
   algorithm_name = argv[5];
 }
 
-Caster* getCaster(int n, function<void(float)> onError) {
+Caster* getCaster(int n, function<void(float)> onError,
+                  function<void(vector<float2>&)> onPos) {
   if (algorithm_name == "ab") {
-    return new CasterAB(n, onError);
+    return new CasterAB(n, onError, onPos);
   } else if (algorithm_name == "nesterov") {
-    return new CasterNesterov(n, onError);
+    return new CasterNesterov(n, onError, onPos);
   } else if (algorithm_name == "adadelta_sync") {
-    return new CasterAdadeltaAsync(n, onError);
+    return new CasterAdadeltaAsync(n, onError, onPos);
   } else if (algorithm_name == "adadelta_async") {
-    return new CasterAdadeltaAsync(n, onError);
+    return new CasterAdadeltaAsync(n, onError, onPos);
   } else if (algorithm_name == "cuda_ab") {
-    return new CasterCudaAB(n, onError);
+    return new CasterCudaAB(n, onError, onPos);
   } else if (algorithm_name == "cuda_nesterov") {
-    return new CasterCudaNesterov(n, onError);
+    return new CasterCudaNesterov(n, onError, onPos);
   } else if (algorithm_name == "cuda_adadelta") {
-    return new CasterCudaAdadelta(n, onError);
+    return new CasterCudaAdadelta(n, onError, onPos);
   } else if (algorithm_name == "cuda_adam") {
-    return new CasterCudaAdam(n, onError);
+    return new CasterCudaAdam(n, onError, onPos);
 
   } else {
     cerr << "Invalid algorithm_name. Expected one of: 'ab', 'cuda_ab', ";
@@ -63,7 +64,7 @@ Caster* getCaster(int n, function<void(float)> onError) {
 
 int main(int argc, char* argv[]) {
   parseArg(argc, argv);
-  srand( time( NULL ) );
+  srand(time(NULL));
 
   Data data;
   int n = data.load_mnist(dataset_file);
@@ -81,7 +82,23 @@ int main(int argc, char* argv[]) {
     errFile << time << " " << err << endl;
   };
 
-  Caster* casterPtr = getCaster(n, onError);
+  auto onPos = [&](vector<float2> &positions) -> void {
+    now = system_clock::now();
+    auto time =
+        time_point_cast<milliseconds>(now).time_since_epoch().count() - start;
+
+    ofstream posFile;
+    posFile.open(experiment_name + "_" + to_string(time) + "_positions");
+
+    for(int i=0; i<positions.size(); i++) {
+      posFile << positions[i].x << " " << positions[i].y << " " << data.labels[i] << endl;
+    }
+
+    posFile.close();
+
+  };
+
+  Caster* casterPtr = getCaster(n, onError, onPos);
   Caster& caster = *casterPtr;
 
   data.generateNearestDistances(caster, n, knn_file);

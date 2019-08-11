@@ -6,8 +6,9 @@ using namespace std;
 
 class CasterNesterov : public CasterCPU {
  public:
-  CasterNesterov(int n, function<void(float)> onErr)
-      : CasterCPU(n, onErr), v(n, {0, 0}), f(n, {0, 0}) {}
+  CasterNesterov(int n, function<void(float)> onErr,
+                 function<void(vector<float2>&)> onPos)
+      : CasterCPU(n, onErr, onPos), v(n, {0, 0}), f(n, {0, 0}) {}
   virtual void simul_step_cpu() override;
 
  protected:

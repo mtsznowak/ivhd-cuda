@@ -170,6 +170,20 @@ void CasterCuda::finish(){
   copyResultsToHost();
 }
 
+__global__ void copyDevicePos(int N, Sample *samples, float2 *positions) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i < N) {
+    positions[i] = samples[i].pos;
+  }
+}
+
+void CasterCuda::copyPositions() {
+  copyDevicePos<<<positions.size() / 256 + 1, 256>>>(positions.size(),
+      d_samples, d_positions);
+  cuCall(cudaMemcpy(&positions[0], d_positions,
+        sizeof(float2) * positions.size(), cudaMemcpyDeviceToHost));
+}
+
 bool CasterCuda::copyResultsToHost() {
   copyPosRelease<<<positions.size() / 256 + 1, 256>>>(positions.size(),
       d_samples, d_positions);
@@ -211,5 +225,15 @@ void CasterCuda::simul_step() {
 
   if(it % 100 == 0) {
     onError(getError());
+  }
+
+  if((itToPosReady--) == 0) {
+    onPositions(positions);
+  }
+
+  if(it % 2000 == 0) {
+    copyPositions();
+    itToPosReady = 5;
+    cudaDeviceSynchronize();
   }
 };

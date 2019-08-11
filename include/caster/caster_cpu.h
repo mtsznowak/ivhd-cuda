@@ -7,7 +7,8 @@ using namespace std;
 
 class CasterCPU : public Caster {
  public:
-  CasterCPU(int n, function<void(float)> onErr) : Caster(n, onErr) {}
+  CasterCPU(int n, function<void(float)> onErr, function<void(vector<float2>&)> onPos)
+      : Caster(n, onErr, onPos) {}
   ~CasterCPU(){};
 
   virtual void simul_step() override {
