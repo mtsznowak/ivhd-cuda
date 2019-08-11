@@ -204,7 +204,7 @@ __global__ void calculateErrors(int dstNum, DistElem *distances, Sample *samples
     float2 iPos = samples[dist.i].pos;
     float2 jPos = samples[dist.j].pos;
     float2 ij = {iPos.x - jPos.x, jPos.y - jPos.y};
-    errors[i] = abs(d - sqrt(ij.x * ij.x + ij.y * ij.y));
+    errors[i] = fabs(d - sqrtf(ij.x * ij.x + ij.y * ij.y));
   }
 }
 
