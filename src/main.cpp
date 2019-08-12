@@ -20,12 +20,13 @@ string knn_file;
 string experiment_name;
 string algorithm_name;
 unsigned iterations;
+unsigned seed;
 
 void parseArg(int argc, char* argv[]) {
-  if (argc != 6) {
-    cerr << "Expected 5 arguments:\n";
+  if (argc != 7) {
+    cerr << "Expected 6 arguments:\n";
     cerr << "./ivhd dataset_file knn_file iterations experiment_name "
-            "algorithm_name\n";
+            "algorithm_name seed\n";
     exit(-1);
   }
 
@@ -34,6 +35,7 @@ void parseArg(int argc, char* argv[]) {
   iterations = stoi(argv[3]);
   experiment_name = argv[4];
   algorithm_name = argv[5];
+  seed = stoi(argv[6]);
 }
 
 Caster* getCaster(int n, function<void(float)> onError,
@@ -64,7 +66,7 @@ Caster* getCaster(int n, function<void(float)> onError,
 
 int main(int argc, char* argv[]) {
   parseArg(argc, argv);
-  srand(time(NULL));
+  srand(seed);
 
   Data data;
   int n = data.load_mnist(dataset_file);
@@ -74,8 +76,10 @@ int main(int argc, char* argv[]) {
 
   ofstream errFile;
   errFile.open(experiment_name + "_error");
+  float minError = std::numeric_limits<float>::max();
   auto onError = [&](float err) -> void {
     now = system_clock::now();
+    minError = min(minError, err);
     auto time =
         time_point_cast<milliseconds>(now).time_since_epoch().count() - start;
 
@@ -90,7 +94,7 @@ int main(int argc, char* argv[]) {
     ofstream posFile;
     posFile.open(experiment_name + "_" + to_string(time) + "_positions");
 
-    for (int i = 0; i < positions.size(); i++) {
+    for (unsigned i = 0; i < positions.size(); i++) {
       posFile << positions[i].x << " " << positions[i].y << " "
               << data.labels[i] << endl;
     }
@@ -115,7 +119,7 @@ int main(int argc, char* argv[]) {
   now = system_clock::now();
   start = time_point_cast<milliseconds>(now).time_since_epoch().count();
 
-  for (int i = 0; i < iterations; i++) {
+  for (unsigned i = 0; i < iterations; i++) {
     caster.simul_step();
   }
   cudaDeviceSynchronize();
@@ -124,6 +128,7 @@ int main(int argc, char* argv[]) {
   auto totalTime =
       time_point_cast<milliseconds>(now).time_since_epoch().count() - start;
   cerr << totalTime << endl;
+  cerr << "minError: " << minError << endl;
 
   caster.finish();
 
