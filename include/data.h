@@ -8,7 +8,6 @@ class Data {
   vector<vector<int>> mnist;
   vector<int> labels;
 
-  float calcEuclideanDistance(const vector<int>& v1, const vector<int>& v2);
   void generateNearestDistances(IDistanceContainer& dstContainer, int n,
                                 string file);
   void generateRandomDistances(IDistanceContainer& dstContainer, int n);

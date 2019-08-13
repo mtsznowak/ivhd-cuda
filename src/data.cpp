@@ -6,15 +6,6 @@
 #include "knn_parser.h"
 using namespace std;
 
-float Data::calcEuclideanDistance(const vector<int>& v1,
-                                  const vector<int>& v2) {
-  float distance = 0;
-  for (int i = 0; i < v1.size(); i++) {
-    distance += (v1[i] - v2[i]) * (v1[i] - v2[i]);
-  }
-  return sqrt(distance);
-}
-
 int Data::load_mnist(std::string file) {
   ifstream f(file);
   int n, m;
@@ -54,8 +45,7 @@ void Data::generateRandomDistances(IDistanceContainer& dstContainer, int n) {
       randIndex = rand() % n;
     }
 
-    DistElem distElem(i, randIndex, DistElemType::etRandom,
-                      calcEuclideanDistance(mnist[i], mnist[randIndex]));
+    DistElem distElem(i, randIndex, DistElemType::etRandom, 1);
     dstContainer.addDistance(distElem);
   }
 }
