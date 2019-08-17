@@ -213,7 +213,7 @@ float CasterCuda::getError() {
       d_samples, d_errors);
 
   thrust::device_ptr<float> err_ptr = thrust::device_pointer_cast(d_errors);
-  return thrust::reduce(err_ptr, err_ptr + distances.size(), 0, thrust::plus<float>());
+  return thrust::reduce(err_ptr, err_ptr + distances.size(), 0.0, thrust::plus<float>());
 }
 
 void CasterCuda::simul_step() {
