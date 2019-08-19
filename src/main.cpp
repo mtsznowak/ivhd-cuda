@@ -15,6 +15,7 @@
 using namespace std;
 using namespace std::chrono;
 
+#define HEAP_LIMIT 50388608
 string dataset_file;
 string knn_file;
 string experiment_name;
@@ -67,6 +68,8 @@ Caster* getCaster(int n, function<void(float)> onError,
 int main(int argc, char* argv[]) {
   parseArg(argc, argv);
   srand(seed);
+
+  cudaDeviceSetLimit(cudaLimitMallocHeapSize, HEAP_LIMIT);
 
   Data data;
   int n = data.load_mnist(dataset_file);

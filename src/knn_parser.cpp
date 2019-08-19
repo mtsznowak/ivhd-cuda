@@ -37,6 +37,7 @@ void KNNParser::parseFile(std::string fileName,
     for (int j = 0; j < neighbours; j++) {
       long neighbour;
       ifstream.read((char *)&neighbour, longSize);
+      assert(ifstream.gcount() == longSize);
       handlePair(i, neighbour);
     }
   }
