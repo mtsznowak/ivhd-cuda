@@ -133,7 +133,8 @@ int main(int argc, char* argv[]) {
 
   now = system_clock::now();
   auto totalTime =
-      time_point_cast<milliseconds>(now).time_since_epoch().count() - start;
+      time_point_cast<milliseconds>(now).time_since_epoch().count() - start -
+      offset;
   cerr << totalTime << endl;
   cerr << "minError: " << minError << endl;
 

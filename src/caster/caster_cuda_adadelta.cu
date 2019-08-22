@@ -50,7 +50,7 @@ __global__ void calcForceComponentsAdadelta(int compNumber, DistElem *distances,
     rv.y -= posJ.y;
 
     float r = sqrtf((posI.x - posJ.x) * (posI.x - posJ.x) +
-        (posI.y - posJ.y) * (posI.y - posJ.y));
+        (posI.y - posJ.y) * (posI.y - posJ.y) + 0.00001f);
     float D = distance.r;
 
     float energy = (r - D) / r;

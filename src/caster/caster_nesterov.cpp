@@ -17,7 +17,7 @@ float2 CasterNesterov::force(DistElem distance) {
 
   float2 rv = {posI.x - posJ.x, posI.y - posJ.y};
 
-  float r = sqrt(rv.x * rv.x + rv.y * rv.y);
+  float r = sqrt(rv.x * rv.x + rv.y * rv.y + 0.00001f);
   float D = distance.r;
 
   float energy = (D - r) / r;

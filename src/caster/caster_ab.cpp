@@ -9,7 +9,7 @@ float2 CasterAB::force(DistElem distance) {
   float2 rv = {positions[distance.i].x - positions[distance.j].x,
                positions[distance.i].y - positions[distance.j].y};
 
-  float r = sqrt(rv.x * rv.x + rv.y * rv.y);
+  float r = sqrt(rv.x * rv.x + rv.y * rv.y + 0.00001f);
   float D = distance.r;
 
   float energy = (D - r) / r;

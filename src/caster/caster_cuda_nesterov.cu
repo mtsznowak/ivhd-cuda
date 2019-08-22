@@ -5,7 +5,7 @@ using namespace std;
 
 __global__ void calcPositionsNesterov(long n, Sample *samples) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
-       i += blockDim.x * gridDim.x) {
+      i += blockDim.x * gridDim.x) {
     Sample sample = samples[i];
 
     float2 force = {0, 0};
@@ -26,9 +26,9 @@ __global__ void calcPositionsNesterov(long n, Sample *samples) {
 }
 
 __global__ void calcForceComponentsNesterov(int compNumber, DistElem *distances,
-                                    Sample *samples) {
+    Sample *samples) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < compNumber;
-       i += blockDim.x * gridDim.x) {
+      i += blockDim.x * gridDim.x) {
     DistElem distance = distances[i];
 
     Sample sampleI = samples[distance.i];
@@ -47,7 +47,7 @@ __global__ void calcForceComponentsNesterov(int compNumber, DistElem *distances,
     rv.y -= posJ.y;
 
     float r = sqrtf((posI.x - posJ.x) * (posI.x - posJ.x) +
-                    (posI.y - posJ.y) * (posI.y - posJ.y));
+        (posI.y - posJ.y) * (posI.y - posJ.y) + 0.00001f);
     float D = distance.r;
 
     float energy = (r - D) / r;
