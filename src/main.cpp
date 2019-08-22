@@ -76,6 +76,7 @@ int main(int argc, char* argv[]) {
 
   system_clock::time_point now = system_clock::now();
   long start = time_point_cast<milliseconds>(now).time_since_epoch().count();
+  long offset = 0;
 
   ofstream errFile;
   errFile.open(experiment_name + "_error");
@@ -83,16 +84,16 @@ int main(int argc, char* argv[]) {
   auto onError = [&](float err) -> void {
     now = system_clock::now();
     minError = min(minError, err);
-    auto time =
-        time_point_cast<milliseconds>(now).time_since_epoch().count() - start;
+    auto time = time_point_cast<milliseconds>(now).time_since_epoch().count() -
+                start - offset;
 
     errFile << time << " " << err << endl;
   };
 
   auto onPos = [&](vector<float2>& positions) -> void {
     now = system_clock::now();
-    auto time =
-        time_point_cast<milliseconds>(now).time_since_epoch().count() - start;
+    auto time = time_point_cast<milliseconds>(now).time_since_epoch().count() -
+                start - offset;
 
     ofstream posFile;
     posFile.open(experiment_name + "_" + to_string(time) + "_positions");
@@ -101,8 +102,11 @@ int main(int argc, char* argv[]) {
       posFile << positions[i].x << " " << positions[i].y << " "
               << data.labels[i] << endl;
     }
-
     posFile.close();
+
+    system_clock::time_point end = system_clock::now();
+    offset += time_point_cast<milliseconds>(end).time_since_epoch().count() -
+              time_point_cast<milliseconds>(now).time_since_epoch().count();
   };
 
   Caster* casterPtr = getCaster(n, onError, onPos);
