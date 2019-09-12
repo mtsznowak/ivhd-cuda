@@ -37,7 +37,5 @@ class CasterCuda : public Caster {
   virtual float getError();
   void copyPositions();
   int itToPosReady = -1;
-
- private:
   unsigned it = 0;
 };
