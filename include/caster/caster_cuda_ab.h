@@ -4,7 +4,7 @@ using namespace std;
 
 class CasterCudaAB : public CasterCuda {
  public:
-  CasterCudaAB(int n, function<void(float)> onErr, function<void(vector<float2>&)> onPos)
+  CasterCudaAB(int n, function<void(double)> onErr, function<void(vector<double2>&)> onPos)
       : CasterCuda(n, onErr, onPos) {}
 
  protected:

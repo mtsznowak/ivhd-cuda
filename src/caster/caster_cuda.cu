@@ -13,7 +13,7 @@ using namespace std;
 
 // initialize pos in Samples
 // initialize num_components
-__global__ void initializeSamples(int n, Sample *samples, float2 *positions,
+__global__ void initializeSamples(int n, Sample *samples, double2 *positions,
     short *sampleFreq) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n) {
@@ -23,7 +23,7 @@ __global__ void initializeSamples(int n, Sample *samples, float2 *positions,
     sample.num_components = sampleFreq[i];
     // FIXME - malloc can return NULL
     sample.components =
-      (float2 *)malloc(sample.num_components * sizeof(float2));
+      (double2 *)malloc(sample.num_components * sizeof(double2));
     samples[i] = sample;
   }
 }
@@ -112,7 +112,7 @@ void CasterCuda::sortHostSamples(vector<int> &labels) {
   }
 
   // sort positions
-  vector<float2> positionsCopy = positions;
+  vector<double2> positionsCopy = positions;
   vector<int> labelsCopy = labels;
   for (int i = 0; i < positions.size(); i++) {
     positions[i] = positionsCopy[sampleIndexes[i]];
@@ -137,15 +137,15 @@ void CasterCuda::sortHostSamples(vector<int> &labels) {
 }
 
 bool CasterCuda::allocateInitializeDeviceMemory() {
-  cuCall(cudaMalloc(&d_positions, positions.size() * sizeof(float2)));
+  cuCall(cudaMalloc(&d_positions, positions.size() * sizeof(double2)));
   cuCall(cudaMalloc(&d_samples, positions.size() * sizeof(Sample)));
   cuCall(cudaMalloc(&d_distances, distances.size() * sizeof(DistElem)));
-  cuCall(cudaMalloc(&d_errors, distances.size() * sizeof(float)));
+  cuCall(cudaMalloc(&d_errors, distances.size() * sizeof(double)));
 
   cuCall(cudaMemcpy(d_positions, &positions[0],
-        sizeof(float2) * positions.size(), cudaMemcpyHostToDevice));
+        sizeof(double2) * positions.size(), cudaMemcpyHostToDevice));
   cuCall(cudaMemset(d_samples, 0, positions.size() * sizeof(Sample)));
-  cuCall(cudaMemset(d_errors, 0, distances.size() * sizeof(float)));
+  cuCall(cudaMemset(d_errors, 0, distances.size() * sizeof(double)));
   cuCall(cudaMemcpy(d_distances, &distances[0],
         sizeof(DistElem) * distances.size(),
         cudaMemcpyHostToDevice));
@@ -153,7 +153,7 @@ bool CasterCuda::allocateInitializeDeviceMemory() {
   return true;
 }
 
-__global__ void copyPosRelease(int N, Sample *samples, float2 *positions) {
+__global__ void copyPosRelease(int N, Sample *samples, double2 *positions) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < N) {
     positions[i] = samples[i].pos;
@@ -170,7 +170,7 @@ void CasterCuda::finish(){
   copyResultsToHost();
 }
 
-__global__ void copyDevicePos(int N, Sample *samples, float2 *positions) {
+__global__ void copyDevicePos(int N, Sample *samples, double2 *positions) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < N) {
     positions[i] = samples[i].pos;
@@ -181,14 +181,14 @@ void CasterCuda::copyPositions() {
   copyDevicePos<<<positions.size() / 256 + 1, 256>>>(positions.size(),
       d_samples, d_positions);
   cuCall(cudaMemcpy(&positions[0], d_positions,
-        sizeof(float2) * positions.size(), cudaMemcpyDeviceToHost));
+        sizeof(double2) * positions.size(), cudaMemcpyDeviceToHost));
 }
 
 bool CasterCuda::copyResultsToHost() {
   copyPosRelease<<<positions.size() / 256 + 1, 256>>>(positions.size(),
       d_samples, d_positions);
   cuCall(cudaMemcpy(&positions[0], d_positions,
-        sizeof(float2) * positions.size(), cudaMemcpyDeviceToHost));
+        sizeof(double2) * positions.size(), cudaMemcpyDeviceToHost));
   cuCall(cudaFree(d_positions));
   cuCall(cudaFree(d_distances));
   cuCall(cudaFree(d_samples));
@@ -196,24 +196,24 @@ bool CasterCuda::copyResultsToHost() {
   return true;
 }
 
-__global__ void calculateErrors(int dstNum, DistElem *distances, Sample *samples, float *errors) {
+__global__ void calculateErrors(int dstNum, DistElem *distances, Sample *samples, double *errors) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < dstNum;
       i += blockDim.x * gridDim.x) {
     DistElem dist = distances[i];
-    float d = dist.r;
-    float2 iPos = samples[dist.i].pos;
-    float2 jPos = samples[dist.j].pos;
-    float2 ij = {iPos.x - jPos.x, jPos.y - jPos.y};
+    double d = dist.r;
+    double2 iPos = samples[dist.i].pos;
+    double2 jPos = samples[dist.j].pos;
+    double2 ij = {iPos.x - jPos.x, jPos.y - jPos.y};
     errors[i] = fabs(d - sqrtf(ij.x * ij.x + ij.y * ij.y));
   }
 }
 
-float CasterCuda::getError() {
+double CasterCuda::getError() {
   calculateErrors<<<256, 256>>>(distances.size(), d_distances,
       d_samples, d_errors);
 
-  thrust::device_ptr<float> err_ptr = thrust::device_pointer_cast(d_errors);
-  return thrust::reduce(err_ptr, err_ptr + distances.size(), 0.0, thrust::plus<float>());
+  thrust::device_ptr<double> err_ptr = thrust::device_pointer_cast(d_errors);
+  return thrust::reduce(err_ptr, err_ptr + distances.size(), 0.0, thrust::plus<double>());
 }
 
 void CasterCuda::simul_step() {

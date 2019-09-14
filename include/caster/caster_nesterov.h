@@ -6,18 +6,18 @@ using namespace std;
 
 class CasterNesterov : public CasterCPU {
  public:
-  CasterNesterov(int n, function<void(float)> onErr,
-                 function<void(vector<float2>&)> onPos)
+  CasterNesterov(int n, function<void(double)> onErr,
+                 function<void(vector<double2>&)> onPos)
       : CasterCPU(n, onErr, onPos), v(n, {0, 0}), f(n, {0, 0}) {}
   virtual void simul_step_cpu() override;
 
  protected:
-  vector<float2> v;
-  vector<float2> f;
+  vector<double2> v;
+  vector<double2> f;
 
  private:
-  float2 force(DistElem distance);
-  float a_factor = 0.9;
-  float b_factor = 0.002;
-  float w_random = 0.01;
+  double2 force(DistElem distance);
+  double a_factor = 0.9;
+  double b_factor = 0.002;
+  double w_random = 0.01;
 };

@@ -5,14 +5,14 @@
 #include <iostream>
 using namespace std;
 
-float2 CasterAB::force(DistElem distance) {
-  float2 rv = {positions[distance.i].x - positions[distance.j].x,
+double2 CasterAB::force(DistElem distance) {
+  double2 rv = {positions[distance.i].x - positions[distance.j].x,
                positions[distance.i].y - positions[distance.j].y};
 
-  float r = sqrt(rv.x * rv.x + rv.y * rv.y + 0.00001f);
-  float D = distance.r;
+  double r = sqrt(rv.x * rv.x + rv.y * rv.y + 0.00001f);
+  double D = distance.r;
 
-  float energy = (D - r) / r;
+  double energy = (D - r) / r;
 
   return {rv.x * energy, rv.y * energy};
 }
@@ -24,7 +24,7 @@ void CasterAB::simul_step_cpu() {
   }
 
   for (int i = 0; i < distances.size(); i++) {
-    float2 df = force(distances[i]);
+    double2 df = force(distances[i]);
 
     if (distances[i].type == etRandom) {
       df.x *= w_random;

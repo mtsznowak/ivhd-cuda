@@ -41,8 +41,8 @@ void parseArg(int argc, char* argv[]) {
   seed = stoi(argv[7]);
 }
 
-Caster* getCaster(int n, function<void(float)> onError,
-                  function<void(vector<float2>&)> onPos) {
+Caster* getCaster(int n, function<void(double)> onError,
+                  function<void(vector<double2>&)> onPos) {
   if (algorithm_name == "ab") {
     return new CasterAB(n, onError, onPos);
   } else if (algorithm_name == "nesterov") {
@@ -82,8 +82,8 @@ int main(int argc, char* argv[]) {
 
   ofstream errFile;
   errFile.open(experiment_name + "_error");
-  float minError = std::numeric_limits<float>::max();
-  auto onError = [&](float err) -> void {
+  double minError = std::numeric_limits<double>::max();
+  auto onError = [&](double err) -> void {
     now = system_clock::now();
     minError = min(minError, err);
     auto time = time_point_cast<milliseconds>(now).time_since_epoch().count() -
@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) {
     errFile << time << " " << err << endl;
   };
 
-  auto onPos = [&](vector<float2>& positions) -> void {
+  auto onPos = [&](vector<double2>& positions) -> void {
     now = system_clock::now();
     auto time = time_point_cast<milliseconds>(now).time_since_epoch().count() -
                 start - offset;

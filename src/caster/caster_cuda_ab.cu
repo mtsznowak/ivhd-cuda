@@ -8,7 +8,7 @@ __global__ void calcPositions(long n, Sample *samples) {
       i += blockDim.x * gridDim.x) {
     Sample sample = samples[i];
 
-    float2 force = {0, 0};
+    double2 force = {0, 0};
     for (int j = 0; j < sample.num_components; j++) {
       force.x += sample.components[j].x;
       force.y += sample.components[j].y;
@@ -31,18 +31,18 @@ __global__ void calcForceComponents(int compNumber, DistElem *distances,
       i += blockDim.x * gridDim.x) {
     DistElem distance = distances[i];
 
-    float2 posI = samples[distance.i].pos;
-    float2 posJ = samples[distance.j].pos;
+    double2 posI = samples[distance.i].pos;
+    double2 posJ = samples[distance.j].pos;
 
-    float2 rv = posI;
+    double2 rv = posI;
     rv.x -= posJ.x;
     rv.y -= posJ.y;
 
-    float r = sqrtf((posI.x - posJ.x) * (posI.x - posJ.x) +
+    double r = sqrtf((posI.x - posJ.x) * (posI.x - posJ.x) +
         (posI.y - posJ.y) * (posI.y - posJ.y) + 0.00001f);
-    float D = distance.r;
+    double D = distance.r;
 
-    float energy = (r - D) / r;
+    double energy = (r - D) / r;
     rv.x *= -energy;
     rv.y *= -energy;
 

@@ -5,9 +5,9 @@
 #include <iostream>
 using namespace std;
 
-float2 CasterNesterov::force(DistElem distance) {
-  float2 posI = positions[distance.i];
-  float2 posJ = positions[distance.j];
+double2 CasterNesterov::force(DistElem distance) {
+  double2 posI = positions[distance.i];
+  double2 posJ = positions[distance.j];
 
   // estimate next positions with previous velocity
   posI.x += v[distance.i].x;
@@ -15,12 +15,12 @@ float2 CasterNesterov::force(DistElem distance) {
   posJ.x += v[distance.j].x;
   posJ.y += v[distance.j].y;
 
-  float2 rv = {posI.x - posJ.x, posI.y - posJ.y};
+  double2 rv = {posI.x - posJ.x, posI.y - posJ.y};
 
-  float r = sqrt(rv.x * rv.x + rv.y * rv.y + 0.00001f);
-  float D = distance.r;
+  double r = sqrt(rv.x * rv.x + rv.y * rv.y + 0.00001f);
+  double D = distance.r;
 
-  float energy = (D - r) / r;
+  double energy = (D - r) / r;
 
   return {rv.x * energy, rv.y * energy};
 }
@@ -32,7 +32,7 @@ void CasterNesterov::simul_step_cpu() {
   }
 
   for (int i = 0; i < distances.size(); i++) {
-    float2 df = force(distances[i]);
+    double2 df = force(distances[i]);
 
     if (distances[i].type == etRandom) {
       df.x *= w_random;

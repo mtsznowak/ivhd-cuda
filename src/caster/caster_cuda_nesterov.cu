@@ -8,7 +8,7 @@ __global__ void calcPositionsNesterov(long n, Sample *samples) {
       i += blockDim.x * gridDim.x) {
     Sample sample = samples[i];
 
-    float2 force = {0, 0};
+    double2 force = {0, 0};
     for (int j = 0; j < sample.num_components; j++) {
       force.x += sample.components[j].x;
       force.y += sample.components[j].y;
@@ -33,8 +33,8 @@ __global__ void calcForceComponentsNesterov(int compNumber, DistElem *distances,
 
     Sample sampleI = samples[distance.i];
     Sample sampleJ = samples[distance.j];
-    float2 posI = sampleI.pos;
-    float2 posJ = sampleJ.pos;
+    double2 posI = sampleI.pos;
+    double2 posJ = sampleJ.pos;
 
     // approximate next positions
     posI.x += sampleI.v.x;
@@ -42,15 +42,15 @@ __global__ void calcForceComponentsNesterov(int compNumber, DistElem *distances,
     posJ.x += sampleJ.v.x;
     posJ.y += sampleJ.v.y;
 
-    float2 rv = posI;
+    double2 rv = posI;
     rv.x -= posJ.x;
     rv.y -= posJ.y;
 
-    float r = sqrtf((posI.x - posJ.x) * (posI.x - posJ.x) +
+    double r = sqrtf((posI.x - posJ.x) * (posI.x - posJ.x) +
         (posI.y - posJ.y) * (posI.y - posJ.y) + 0.00001f);
-    float D = distance.r;
+    double D = distance.r;
 
-    float energy = (r - D) / r;
+    double energy = (r - D) / r;
     rv.x *= -energy;
     rv.y *= -energy;
 

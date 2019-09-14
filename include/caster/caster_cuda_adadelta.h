@@ -4,8 +4,8 @@ using namespace std;
 
 class CasterCudaAdadelta : public CasterCuda {
  public:
-  CasterCudaAdadelta(int n, function<void(float)> onErr,
-                     function<void(vector<float2>&)> onPos)
+  CasterCudaAdadelta(int n, function<void(double)> onErr,
+                     function<void(vector<double2>&)> onPos)
       : CasterCuda(n, onErr, onPos) {}
   virtual void prepare(vector<int> &labels) override;
 
@@ -14,5 +14,5 @@ class CasterCudaAdadelta : public CasterCuda {
 
  private:
   // x,y -> gradient, z,w -> param
-  float4 *d_average_params;
+  double4 *d_average_params;
 };

@@ -5,8 +5,8 @@ using namespace std;
 
 class CasterAdadeltaAsync : public CasterCPU {
  public:
-  CasterAdadeltaAsync(int n, function<void(float)> onErr,
-                      function<void(vector<float2>&)> onPos)
+  CasterAdadeltaAsync(int n, function<void(double)> onErr,
+                      function<void(vector<double2>&)> onPos)
       : CasterCPU(n, onErr, onPos),
         v(n, {0, 0}),
         f(n, {0, 0}),
@@ -15,14 +15,14 @@ class CasterAdadeltaAsync : public CasterCPU {
   virtual void simul_step_cpu() override;
 
  protected:
-  vector<float2> v;
-  vector<float2> f;
-  vector<float2> decGrad;
-  vector<float2> decDelta;
+  vector<double2> v;
+  vector<double2> f;
+  vector<double2> decGrad;
+  vector<double2> decDelta;
 
  private:
-  float2 force(DistElem distance);
-  float a_factor = 0.9;
-  float b_factor = 0.002;
-  float w_random = 0.01;
+  double2 force(DistElem distance);
+  double a_factor = 0.9;
+  double b_factor = 0.002;
+  double w_random = 0.01;
 };

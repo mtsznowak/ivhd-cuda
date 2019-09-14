@@ -6,13 +6,13 @@ using namespace std;
 #define DECAYING_PARAM 0.1
 #define EPS 0.00000001f
 
-__global__ void calcPositionsAdadelta(long n, Sample *samples, float4 *avarage_params) {
+__global__ void calcPositionsAdadelta(long n, Sample *samples, double4 *avarage_params) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
       i += blockDim.x * gridDim.x) {
     Sample sample = samples[i];
-    float4 avarage_param = avarage_params[i];
+    double4 avarage_param = avarage_params[i];
 
-    float2 force = {0, 0};
+    double2 force = {0, 0};
     for (int j = 0; j < sample.num_components; j++) {
       force.x += sample.components[j].x;
       force.y += sample.components[j].y;
@@ -21,8 +21,8 @@ __global__ void calcPositionsAdadelta(long n, Sample *samples, float4 *avarage_p
     avarage_param.x = avarage_param.x * DECAYING_PARAM + (1.0 - DECAYING_PARAM) * force.x * force.x;
     avarage_param.y = avarage_param.y * DECAYING_PARAM + (1.0 - DECAYING_PARAM) * force.y * force.y;
 
-    float deltax = force.x / sqrtf(EPS + avarage_param.x) * sqrtf(EPS + avarage_param.z);
-    float deltay = force.y / sqrtf(EPS + avarage_param.y) * sqrtf(EPS + avarage_param.w);
+    double deltax = force.x / sqrtf(EPS + avarage_param.x) * sqrtf(EPS + avarage_param.z);
+    double deltay = force.y / sqrtf(EPS + avarage_param.y) * sqrtf(EPS + avarage_param.w);
 
     sample.pos.x += deltax;
     sample.pos.y += deltay;
@@ -42,18 +42,18 @@ __global__ void calcForceComponentsAdadelta(int compNumber, DistElem *distances,
       i += blockDim.x * gridDim.x) {
     DistElem distance = distances[i];
 
-    float2 posI = samples[distance.i].pos;
-    float2 posJ = samples[distance.j].pos;
+    double2 posI = samples[distance.i].pos;
+    double2 posJ = samples[distance.j].pos;
 
-    float2 rv = posI;
+    double2 rv = posI;
     rv.x -= posJ.x;
     rv.y -= posJ.y;
 
-    float r = sqrtf((posI.x - posJ.x) * (posI.x - posJ.x) +
+    double r = sqrtf((posI.x - posJ.x) * (posI.x - posJ.x) +
         (posI.y - posJ.y) * (posI.y - posJ.y) + 0.00001f);
-    float D = distance.r;
+    double D = distance.r;
 
-    float energy = (r - D) / r;
+    double energy = (r - D) / r;
     rv.x *= -energy;
     rv.y *= -energy;
 
@@ -77,6 +77,6 @@ void CasterCudaAdadelta::prepare(vector<int> &labels) {
   CasterCuda::prepare(labels);
 
   // TODO release this memory
-  cuCall(cudaMalloc(&d_average_params, positions.size() * sizeof(float4)));
-  cuCall(cudaMemset(d_average_params, 0, positions.size() * sizeof(float4)));
+  cuCall(cudaMalloc(&d_average_params, positions.size() * sizeof(double4)));
+  cuCall(cudaMemset(d_average_params, 0, positions.size() * sizeof(double4)));
 }

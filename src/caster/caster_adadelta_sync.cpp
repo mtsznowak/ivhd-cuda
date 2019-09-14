@@ -8,22 +8,22 @@ using namespace std;
 #define DECAYING_PARAM 0.9
 #define EPS 0.00000001
 
-float2 CasterAdadeltaSync::force(DistElem distance) {
-  float2 rv = {positions[distance.i].x - positions[distance.j].x,
+double2 CasterAdadeltaSync::force(DistElem distance) {
+  double2 rv = {positions[distance.i].x - positions[distance.j].x,
                positions[distance.i].y - positions[distance.j].y};
 
-  float r = sqrt(rv.x * rv.x + rv.y * rv.y + 0.00001f);
-  float D = distance.r;
+  double r = sqrt(rv.x * rv.x + rv.y * rv.y + 0.00001f);
+  double D = distance.r;
 
-  float energy = (D - r) / r;
+  double energy = (D - r) / r;
 
   return {rv.x * energy, rv.y * energy};
 }
 
-float2 CasterAdadeltaSync::calcForce(int i) {
-  float2 df = {0, 0};
+double2 CasterAdadeltaSync::calcForce(int i) {
+  double2 df = {0, 0};
   for (int j = 0; j < neighbours[i].size(); j++) {
-    float2 dfcomponent = force(neighbours[i][j]);
+    double2 dfcomponent = force(neighbours[i][j]);
     if (neighbours[i][j].type == etRandom) {
       dfcomponent.x *= w_random;
       dfcomponent.y *= w_random;
@@ -41,16 +41,16 @@ float2 CasterAdadeltaSync::calcForce(int i) {
 void CasterAdadeltaSync::simul_step_cpu() {
   // update velicities and positions
   for (int i = 0; i < positions.size(); i++) {
-    float2 force = calcForce(i);
+    double2 force = calcForce(i);
 
     decGrad[i].x = decGrad[i].x * DECAYING_PARAM +
                    (1.0 - DECAYING_PARAM) * force.x * force.x;
     decGrad[i].y = decGrad[i].y * DECAYING_PARAM +
                    (1.0 - DECAYING_PARAM) * force.y * force.y;
 
-    float deltax =
+    double deltax =
         force.x / sqrtf(EPS + decGrad[i].x) * sqrtf(EPS + decDelta[i].x);
-    float deltay =
+    double deltay =
         force.y / sqrtf(EPS + decGrad[i].y) * sqrtf(EPS + decDelta[i].y);
 
     positions[i].x += deltax;

@@ -4,8 +4,8 @@ using namespace std;
 
 class CasterCudaNesterov : public CasterCuda {
  public:
-  CasterCudaNesterov(int n, function<void(float)> onErr,
-                     function<void(vector<float2>&)> onPos)
+  CasterCudaNesterov(int n, function<void(double)> onErr,
+                     function<void(vector<double2>&)> onPos)
       : CasterCuda(n, onErr, onPos) {}
 
  protected:

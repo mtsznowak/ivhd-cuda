@@ -8,14 +8,14 @@ using namespace std;
 #define DECAYING_PARAM 0.9
 #define EPS 0.00000001
 
-float2 CasterAdadeltaAsync::force(DistElem distance) {
-  float2 rv = {positions[distance.i].x - positions[distance.j].x,
+double2 CasterAdadeltaAsync::force(DistElem distance) {
+  double2 rv = {positions[distance.i].x - positions[distance.j].x,
                positions[distance.i].y - positions[distance.j].y};
 
-  float r = sqrt(rv.x * rv.x + rv.y * rv.y + 0.00001f);
-  float D = distance.r;
+  double r = sqrt(rv.x * rv.x + rv.y * rv.y + 0.00001f);
+  double D = distance.r;
 
-  float energy = (D - r) / r;
+  double energy = (D - r) / r;
 
   return {rv.x * energy, rv.y * energy};
 }
@@ -27,7 +27,7 @@ void CasterAdadeltaAsync::simul_step_cpu() {
   }
 
   for (int i = 0; i < distances.size(); i++) {
-    float2 df = force(distances[i]);
+    double2 df = force(distances[i]);
 
     if (distances[i].type == etRandom) {
       df.x *= w_random;
@@ -47,9 +47,9 @@ void CasterAdadeltaAsync::simul_step_cpu() {
     decGrad[i].y = decGrad[i].y * DECAYING_PARAM +
                    (1.0 - DECAYING_PARAM) * f[i].y * f[i].y;
 
-    float deltax =
+    double deltax =
         f[i].x / sqrtf(EPS + decGrad[i].x) * sqrtf(EPS + decDelta[i].x);
-    float deltay =
+    double deltay =
         f[i].y / sqrtf(EPS + decGrad[i].y) * sqrtf(EPS + decDelta[i].y);
 
     positions[i].x += deltax;

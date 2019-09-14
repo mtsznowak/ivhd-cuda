@@ -8,8 +8,8 @@ using namespace std;
 
 class Caster : public IDistanceContainer {
  public:
-  Caster(int n, function<void(float)> onErrorCallback,
-         function<void(vector<float2>&)> onPositionsCallback)
+  Caster(int n, function<void(double)> onErrorCallback,
+         function<void(vector<double2>&)> onPositionsCallback)
       : positions(n) {
     onError = onErrorCallback;
     onPositions = onPositionsCallback;
@@ -19,7 +19,7 @@ class Caster : public IDistanceContainer {
   virtual void prepare(vector<int>& labels){};
   virtual void finish(){};
 
-  vector<float2> positions;
-  function<void(float)> onError;
-  function<void(vector<float2>&)> onPositions;
+  vector<double2> positions;
+  function<void(double)> onError;
+  function<void(vector<double2>&)> onPositions;
 };
