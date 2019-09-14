@@ -10,7 +10,7 @@ class Data {
 
   void generateNearestDistances(IDistanceContainer& dstContainer, int n,
                                 string file);
-  void generateRandomDistances(IDistanceContainer& dstContainer, int n);
+  void generateRandomDistances(IDistanceContainer& dstContainer, int n, unsigned rn);
   int load_mnist(std::string file);
   vector<int>& labelsRef() { return labels; }
 };

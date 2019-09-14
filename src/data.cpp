@@ -38,15 +38,20 @@ int Data::load_mnist(std::string file) {
   return n;
 }
 
-void Data::generateRandomDistances(IDistanceContainer& dstContainer, int n) {
+#include <iostream>
+void Data::generateRandomDistances(IDistanceContainer& dstContainer, int n,
+                                   unsigned rn) {
   for (int i = 0; i < n; i++) {
-    int randIndex = rand() % n;
-    while (randIndex == i && !dstContainer.containsDst(i, randIndex)) {
-      randIndex = rand() % n;
-    }
+    unsigned rn_it = rn;
+    while (rn_it--) {
+      int randIndex = rand() % n;
+      while (randIndex == i && !dstContainer.containsDst(i, randIndex)) {
+        randIndex = rand() % n;
+      }
 
-    DistElem distElem(i, randIndex, DistElemType::etRandom, 1);
-    dstContainer.addDistance(distElem);
+      DistElem distElem(i, randIndex, DistElemType::etRandom, 1);
+      dstContainer.addDistance(distElem);
+    }
   }
 }
 

@@ -22,11 +22,12 @@ string experiment_name;
 string algorithm_name;
 unsigned iterations;
 unsigned seed;
+unsigned random_neighbours;
 
 void parseArg(int argc, char* argv[]) {
-  if (argc != 7) {
-    cerr << "Expected 6 arguments:\n";
-    cerr << "./ivhd dataset_file knn_file iterations experiment_name "
+  if (argc != 8) {
+    cerr << "Expected 7 arguments:\n";
+    cerr << "./ivhd dataset_file knn_file iterations random_neighbours experiment_name "
             "algorithm_name seed\n";
     exit(-1);
   }
@@ -34,9 +35,10 @@ void parseArg(int argc, char* argv[]) {
   dataset_file = argv[1];
   knn_file = argv[2];
   iterations = stoi(argv[3]);
-  experiment_name = argv[4];
-  algorithm_name = argv[5];
-  seed = stoi(argv[6]);
+  random_neighbours = stoi(argv[4]);
+  experiment_name = argv[5];
+  algorithm_name = argv[6];
+  seed = stoi(argv[7]);
 }
 
 Caster* getCaster(int n, function<void(float)> onError,
@@ -113,8 +115,7 @@ int main(int argc, char* argv[]) {
   Caster& caster = *casterPtr;
 
   data.generateNearestDistances(caster, n, knn_file);
-  data.generateRandomDistances(caster, n);
-
+  data.generateRandomDistances(caster, n, random_neighbours);
   for (int i = 0; i < n; i++) {
     caster.positions[i].x = rand() % 100000 / 100000.0;
     caster.positions[i].y = rand() % 100000 / 100000.0;
