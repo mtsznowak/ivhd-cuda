@@ -15,7 +15,7 @@ using namespace std;
 // initialize num_components
 __global__ void initializeSamples(int n, Sample *samples, float2 *positions,
     short *sampleFreq) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  unsigned i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n) {
     Sample sample;
     sample.pos = positions[i];
@@ -30,7 +30,7 @@ __global__ void initializeSamples(int n, Sample *samples, float2 *positions,
 
 __global__ void initializeDistances(int nDst, DistElem *distances,
     short2 *dstIndexes, Sample *samples) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  unsigned i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < nDst) {
     DistElem dst = distances[i];
     dst.comp1 = &samples[dst.i].components[dstIndexes[i].x];
@@ -44,14 +44,14 @@ void CasterCuda::initializeHelperVectors() {
    * calculate number of distances for each sample and index of each distance
    * for a given sample
    */
-  short sampleFreq[positions.size()];
-  for (int i = 0; i < positions.size(); i++) {
+  short *sampleFreq = new short[positions.size()];
+  for (unsigned i = 0; i < positions.size(); i++) {
     sampleFreq[i] = 0;
   }
 
-  short2 dstIndexes[distances.size()];
+  short2 *dstIndexes = new short2[distances.size()];
 
-  for (int i = 0; i < distances.size(); i++) {
+  for (unsigned i = 0; i < distances.size(); i++) {
     dstIndexes[i] = {sampleFreq[distances[i].i]++,
       sampleFreq[distances[i].j]++};
   }
@@ -61,6 +61,8 @@ void CasterCuda::initializeHelperVectors() {
   cuCall(cudaMalloc(&d_sample_freq, positions.size() * sizeof(short)));
   cuCall(cudaMemcpy(d_sample_freq, sampleFreq, sizeof(short) * positions.size(),
         cudaMemcpyHostToDevice));
+
+  delete sampleFreq;
 
   initializeSamples<<<positions.size() / 256 + 1, 256>>>(
       positions.size(), d_samples, d_positions, d_sample_freq);
@@ -75,6 +77,7 @@ void CasterCuda::initializeHelperVectors() {
   initializeDistances<<<distances.size() / 256 + 1, 256>>>(
       distances.size(), d_distances, d_dst_indexes, d_samples);
   cuCall(cudaFree(d_dst_indexes));
+  delete dstIndexes;
 }
 
 /*
@@ -87,12 +90,12 @@ void CasterCuda::initializeHelperVectors() {
 void CasterCuda::sortHostSamples(vector<int> &labels) {
   // create array of sorted indexes
   vector<short> sampleFreq(positions.size());
-  for (int i = 0; i < positions.size(); i++) {
+  for (unsigned i = 0; i < positions.size(); i++) {
     sampleFreq[i] = 0;
   }
 
   vector<int> sampleIndexes(positions.size());
-  for (int i = 0; i < positions.size(); i++) {
+  for (unsigned i = 0; i < positions.size(); i++) {
     sampleIndexes[i] = i;
   }
 
@@ -107,20 +110,20 @@ void CasterCuda::sortHostSamples(vector<int> &labels) {
 
   // create mapping index->new index
   vector<int> newIndexes(positions.size());
-  for (int i = 0; i < positions.size(); i++) {
+  for (unsigned i = 0; i < positions.size(); i++) {
     newIndexes[sampleIndexes[i]] = i;
   }
 
   // sort positions
   vector<float2> positionsCopy = positions;
   vector<int> labelsCopy = labels;
-  for (int i = 0; i < positions.size(); i++) {
+  for (unsigned i = 0; i < positions.size(); i++) {
     positions[i] = positionsCopy[sampleIndexes[i]];
     labels[i] = labelsCopy[sampleIndexes[i]];
   }
 
   // update indexes in distances
-  for (int i = 0; i < distances.size(); i++) {
+  for (unsigned i = 0; i < distances.size(); i++) {
     distances[i].i = newIndexes[distances[i].i];
     distances[i].j = newIndexes[distances[i].j];
   }
@@ -154,7 +157,7 @@ bool CasterCuda::allocateInitializeDeviceMemory() {
 }
 
 __global__ void copyPosRelease(int N, Sample *samples, float2 *positions) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  unsigned i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < N) {
     positions[i] = samples[i].pos;
     free(samples[i].components);
@@ -171,7 +174,7 @@ void CasterCuda::finish(){
 }
 
 __global__ void copyDevicePos(int N, Sample *samples, float2 *positions) {
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  unsigned i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i < N) {
     positions[i] = samples[i].pos;
   }
@@ -197,7 +200,7 @@ bool CasterCuda::copyResultsToHost() {
 }
 
 __global__ void calculateErrors(int dstNum, DistElem *distances, Sample *samples, float *errors) {
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < dstNum;
+  for (unsigned i = blockIdx.x * blockDim.x + threadIdx.x; i < dstNum;
       i += blockDim.x * gridDim.x) {
     DistElem dist = distances[i];
     float d = dist.r;

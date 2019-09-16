@@ -15,7 +15,7 @@
 using namespace std;
 using namespace std::chrono;
 
-#define HEAP_LIMIT 50388608
+#define HEAP_LIMIT 100000000
 string dataset_file;
 string knn_file;
 string experiment_name;
