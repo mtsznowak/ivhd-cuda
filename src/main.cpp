@@ -130,6 +130,14 @@ int main(int argc, char* argv[]) {
   for (unsigned i = 0; i < iterations; i++) {
     caster.simul_step();
   }
+
+  if(true && algorithm_name == "cuda_ab") {
+    CasterCudaAB *ab = (CasterCudaAB *)&caster;
+    ab->setFinalizing(true);
+    for(unsigned i = 0; i < 750; i++){
+      caster.simul_step();
+    }
+  }
   cudaDeviceSynchronize();
 
   now = system_clock::now();

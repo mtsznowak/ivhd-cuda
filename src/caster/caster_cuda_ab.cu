@@ -26,7 +26,7 @@ __global__ void calcPositions(long n, Sample *samples) {
 }
 
 __global__ void calcForceComponents(int compNumber, DistElem *distances,
-    Sample *samples) {
+    Sample *samples, bool finalizing) {
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < compNumber;
       i += blockDim.x * gridDim.x) {
     DistElem distance = distances[i];
@@ -42,7 +42,12 @@ __global__ void calcForceComponents(int compNumber, DistElem *distances,
         (posI.y - posJ.y) * (posI.y - posJ.y) + 0.00001f);
     float D = distance.r;
 
-    float energy = (r - D) / r;
+    float energy;
+    if(finalizing) {
+      energy = 0.005f / r;
+    } else {
+      energy = (r - D) / r;
+    }
     rv.x *= -energy;
     rv.y *= -energy;
 
@@ -58,6 +63,6 @@ __global__ void calcForceComponents(int compNumber, DistElem *distances,
 }
 
 void CasterCudaAB::simul_step_cuda() {
-  calcForceComponents<<<256, 256>>>(distances.size(), d_distances, d_samples);
+  calcForceComponents<<<256, 256>>>(distances.size(), d_distances, d_samples, finalizing);
   calcPositions<<<256, 256>>>(positions.size(), d_samples);
 }
