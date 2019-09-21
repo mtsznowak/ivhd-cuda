@@ -45,6 +45,9 @@ __global__ void calcForceComponents(int compNumber, DistElem *distances,
     float energy;
     if(finalizing) {
       energy = 0.005f / r;
+      if(r < D) {
+        energy *= -1.0f;
+      }
     } else {
       energy = (r - D) / r;
     }
