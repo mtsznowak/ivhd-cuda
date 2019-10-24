@@ -35,6 +35,7 @@ class CasterCuda : public Caster {
   void initializeHelperVectors();
   virtual void simul_step_cuda() = 0;
   virtual float getError();
+  long startTime = 0;
   void copyPositions();
   int itToPosReady = -1;
   unsigned it = 0;

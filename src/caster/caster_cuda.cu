@@ -1,6 +1,7 @@
 #include <cuda.h>
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <cstring>
 #include <iostream>
 #include <unordered_map>
@@ -10,6 +11,7 @@
 #include "constants.h"
 #include "caster/caster_cuda.h"
 using namespace std;
+using namespace std::chrono;
 
 // initialize pos in Samples
 // initialize num_components
@@ -221,22 +223,41 @@ float CasterCuda::getError() {
 
 void CasterCuda::simul_step() {
   if (!it++) {
+    system_clock::time_point now = system_clock::now();
+    startTime = time_point_cast<milliseconds>(now).time_since_epoch().count();
+
     initializeHelperVectors();
   }
 
-  simul_step_cuda();
+  system_clock::time_point now = system_clock::now();
+  long actTime = time_point_cast<milliseconds>(now).time_since_epoch().count();
 
-  if(it % 100 == 0) {
-    onError(getError());
-  }
+  if(actTime >= startTime + 150 ) { // 8 fps
 
-  if((itToPosReady--) == 0) {
-    onPositions(positions);
-  }
-
-  if(it % 2000 == 0) {
     copyPositions();
-    itToPosReady = 5;
     cudaDeviceSynchronize();
+    onPositions(positions);
+    cudaDeviceSynchronize();
+    now = system_clock::now();
+    startTime = time_point_cast<milliseconds>(now).time_since_epoch().count();
   }
+
+
+  simul_step_cuda();
+  cudaDeviceSynchronize();
+
+  /*if(it % 100 == 0) {*/
+  /*  onError(getError());*/
+  /*}*/
+
+  /*if((itToPosReady--) == 0) {*/
+
+  /*  onPositions(positions);*/
+  /*}*/
+
+  /*if(it % 2000 == 0) {*/
+  /*  copyPositions();*/
+  /*  itToPosReady = 5;*/
+  /*  cudaDeviceSynchronize();*/
+  /*}*/
 };
