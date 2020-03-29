@@ -1,6 +1,6 @@
 # IVHD-CUDA
 
-This is the *official* implementation of the **IVHD-CUDA** by the original authors, which is used in  visualize large-scale and high-dimensional data "Fast visualization of large multidimensional data inGPU/CUDA environment, by embedding of sparsekNNgraphs". The package also contains a brief description of how to setup FAISS library used for kNN graph generation.
+This is the *official* implementation of the **IVHD-CUDA**, which is used in "Fast visualization of large multidimensional data in GPU/CUDA environment, by embedding of sparse kNN graphs".
 
 Contact person: Bartosz Minch (minch@agh.edu.pl), Witold Dzwinel (dzwinel@agh.edu.pl).
 
